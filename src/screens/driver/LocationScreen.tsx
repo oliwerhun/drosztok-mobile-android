@@ -18,11 +18,18 @@ interface LocationScreenProps {
   locationTitle: string;
 }
 
+interface LastCheckoutData {
+  locationName: string;
+  memberData: LocationMember;
+  index: number;
+}
+
 export default function LocationScreen({ locationName, locationTitle }: LocationScreenProps) {
   const { userProfile } = useAuth();
   const [members, setMembers] = useState<LocationMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
+  const [lastCheckout, setLastCheckout] = useState<LastCheckoutData | null>(null);
 
   // Realtime Firestore listener
   useEffect(() => {
@@ -89,25 +96,25 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     };
   };
 
-  // Check-in function (FIXED!)
+  // Check-in function
   const handleCheckIn = async () => {
     if (!userProfile) return;
 
     const memberObject = createMemberObject();
     if (!memberObject) return;
 
+    setLastCheckout(null);
+
     try {
       const locationRef = doc(db, 'locations', locationName);
       const docSnap = await getDoc(locationRef);
 
       if (docSnap.exists()) {
-        // Document exists, use updateDoc
         const currentMembers = docSnap.data().members || [];
         await updateDoc(locationRef, {
           members: [...currentMembers, memberObject],
         });
       } else {
-        // Document doesn't exist, create it with setDoc
         await setDoc(locationRef, {
           members: [memberObject],
         });
@@ -128,16 +135,122 @@ export default function LocationScreen({ locationName, locationTitle }: Location
 
       if (docSnap.exists()) {
         const currentMembers = docSnap.data().members || [];
-        const updatedMembers = currentMembers.filter((m: LocationMember) => m.uid !== userProfile.uid);
+        const userIndex = currentMembers.findIndex((m: LocationMember) => m.uid === userProfile.uid);
+        
+        if (userIndex !== -1) {
+          const memberToRemove = currentMembers[userIndex];
+          
+          setLastCheckout({
+            locationName,
+            memberData: memberToRemove,
+            index: userIndex,
+          });
 
-        await updateDoc(locationRef, {
-          members: updatedMembers,
-        });
+          const updatedMembers = currentMembers.filter((m: LocationMember) => m.uid !== userProfile.uid);
+          await updateDoc(locationRef, {
+            members: updatedMembers,
+          });
+        }
       }
     } catch (error) {
       console.error('Check-out error:', error);
       Alert.alert('Hiba', 'Nem sikerült kijelentkezni.');
     }
+  };
+
+  // Flame function
+  const handleFlame = async () => {
+    if (!lastCheckout || !userProfile) return;
+    if (lastCheckout.locationName !== locationName) return;
+
+    try {
+      const locationRef = doc(db, 'locations', locationName);
+      const docSnap = await getDoc(locationRef);
+
+      if (docSnap.exists()) {
+        const currentMembers = docSnap.data().members || [];
+        
+        if (currentMembers.some((m: LocationMember) => m.uid === userProfile.uid)) {
+          setLastCheckout(null);
+          return;
+        }
+
+        const memberWithFlame = {
+          ...lastCheckout.memberData,
+          displayName: `🔥 ${lastCheckout.memberData.displayName.replace(/^🔥\s*/, '')}`,
+        };
+
+        const updatedMembers = [...currentMembers];
+        updatedMembers.splice(lastCheckout.index, 0, memberWithFlame);
+
+        await updateDoc(locationRef, {
+          members: updatedMembers,
+        });
+
+        setLastCheckout(null);
+      }
+    } catch (error) {
+      console.error('Flame error:', error);
+      Alert.alert('Hiba', 'Nem sikerült visszavenni a pozíciót.');
+    }
+  };
+
+  // Food/Phone function (TOGGLE!)
+  const handleFoodPhone = async () => {
+    if (!userProfile || !isCheckedIn) return;
+
+    try {
+      const locationRef = doc(db, 'locations', locationName);
+      const docSnap = await getDoc(locationRef);
+
+      if (docSnap.exists()) {
+        const currentMembers = docSnap.data().members || [];
+        const userIndex = currentMembers.findIndex((m: LocationMember) => m.uid === userProfile.uid);
+        
+        if (userIndex !== -1) {
+          const currentMember = currentMembers[userIndex];
+          let newDisplayName = currentMember.displayName;
+
+          // Check ha van már 🍔📞
+          const hasFoodPhone = newDisplayName.includes('🍔📞');
+
+          if (hasFoodPhone) {
+            // REMOVE 🍔📞
+            newDisplayName = newDisplayName.replace(/🍔📞\s*/g, '');
+          } else {
+            // ADD 🍔📞 (flame után, ha van)
+            if (newDisplayName.startsWith('🔥 ')) {
+              newDisplayName = `🔥 🍔📞 ${newDisplayName.replace(/^🔥\s*/, '')}`;
+            } else {
+              newDisplayName = `🍔📞 ${newDisplayName}`;
+            }
+          }
+
+          const updatedMember = {
+            ...currentMember,
+            displayName: newDisplayName,
+          };
+
+          const updatedMembers = [...currentMembers];
+          updatedMembers[userIndex] = updatedMember;
+
+          await updateDoc(locationRef, {
+            members: updatedMembers,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Food/Phone error:', error);
+      Alert.alert('Hiba', 'Nem sikerült frissíteni.');
+    }
+  };
+
+  // Check if flame button should be enabled
+  const canUseFlame = () => {
+    if (!lastCheckout) return false;
+    if (lastCheckout.locationName !== locationName) return false;
+    if (isCheckedIn) return false;
+    return true;
   };
 
   if (loading) {
@@ -187,7 +300,7 @@ export default function LocationScreen({ locationName, locationTitle }: Location
           onPress={handleCheckIn}
           disabled={isCheckedIn}
         >
-          <Text style={styles.buttonText}>Bejelentkezés</Text>
+          <Text style={styles.buttonText}>Be</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -199,7 +312,31 @@ export default function LocationScreen({ locationName, locationTitle }: Location
           onPress={handleCheckOut}
           disabled={!isCheckedIn}
         >
-          <Text style={styles.buttonText}>Kijelentkezés</Text>
+          <Text style={styles.buttonText}>Ki</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.flameButton,
+            !canUseFlame() && styles.buttonDisabled,
+          ]}
+          onPress={handleFlame}
+          disabled={!canUseFlame()}
+        >
+          <Text style={styles.flameText}>🔥</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.button,
+            styles.foodPhoneButton,
+            !isCheckedIn && styles.buttonDisabled,
+          ]}
+          onPress={handleFoodPhone}
+          disabled={!isCheckedIn}
+        >
+          <Text style={styles.foodPhoneText}>🍔📞</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -290,7 +427,7 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     padding: 16,
-    gap: 12,
+    gap: 8,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
@@ -300,12 +437,21 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   checkInButton: {
     backgroundColor: '#10b981',
   },
   checkOutButton: {
     backgroundColor: '#f59e0b',
+  },
+  flameButton: {
+    backgroundColor: '#ef4444',
+    maxWidth: 70,
+  },
+  foodPhoneButton: {
+    backgroundColor: '#3b82f6',
+    maxWidth: 70,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -314,5 +460,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  flameText: {
+    fontSize: 24,
+  },
+  foodPhoneText: {
+    fontSize: 20,
   },
 });
