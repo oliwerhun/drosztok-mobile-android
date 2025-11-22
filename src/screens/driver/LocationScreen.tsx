@@ -33,12 +33,10 @@ export default function LocationScreen({ locationName, locationTitle }: Location
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [lastCheckout, setLastCheckout] = useState<LastCheckoutData | null>(null);
   
-  // GPS Toggle state
   const [gpsEnabled, setGpsEnabled] = useState(false);
   const [isInsideZone, setIsInsideZone] = useState(false);
   const [locationPermission, setLocationPermission] = useState(false);
 
-  // Request location permission
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -46,7 +44,6 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     })();
   }, []);
 
-  // GPS Tracking
   useEffect(() => {
     if (!gpsEnabled || !locationPermission) return;
 
@@ -85,7 +82,6 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     };
   }, [gpsEnabled, locationPermission, locationName, isCheckedIn]);
 
-  // Realtime Firestore listener
   useEffect(() => {
     if (!locationName) return;
 
@@ -318,7 +314,6 @@ export default function LocationScreen({ locationName, locationTitle }: Location
 
   return (
     <View style={styles.container}>
-      {/* GPS Toggle Button - LEJJEBB */}
       <TouchableOpacity
         style={[
           styles.gpsToggle,
@@ -429,7 +424,7 @@ const styles = StyleSheet.create({
   },
   gpsToggle: {
     position: 'absolute',
-    top: 50,
+    top: 10,
     left: 10,
     zIndex: 1000,
     paddingHorizontal: 12,
@@ -457,9 +452,8 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#4f46e5',
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
-    paddingTop: 60,
   },
   headerTitle: {
     fontSize: 24,
