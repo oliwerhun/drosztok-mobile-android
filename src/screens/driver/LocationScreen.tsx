@@ -12,6 +12,8 @@ import { doc, onSnapshot, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { LocationMember } from '../../types';
+import * as Location from 'expo-location';
+import { isPointInPolygon, geofencedLocations } from '../../services/GeofenceService';
 
 interface LocationScreenProps {
   locationName: string;
@@ -30,6 +32,58 @@ export default function LocationScreen({ locationName, locationTitle }: Location
   const [loading, setLoading] = useState(true);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [lastCheckout, setLastCheckout] = useState<LastCheckoutData | null>(null);
+  
+  // GPS Toggle state
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [isInsideZone, setIsInsideZone] = useState(false);
+  const [locationPermission, setLocationPermission] = useState(false);
+
+  // Request location permission
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      setLocationPermission(status === 'granted');
+    })();
+  }, []);
+
+  // GPS Tracking
+  useEffect(() => {
+    if (!gpsEnabled || !locationPermission) return;
+
+    let locationSubscription: Location.LocationSubscription | null = null;
+
+    (async () => {
+      locationSubscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 5000,
+          distanceInterval: 10,
+        },
+        (location) => {
+          const userPoint = {
+            lat: location.coords.latitude,
+            lng: location.coords.longitude,
+          };
+
+          if (geofencedLocations[locationName]) {
+            const insideZone = isPointInPolygon(userPoint, geofencedLocations[locationName].polygon);
+            setIsInsideZone(insideZone);
+
+            if (!insideZone && isCheckedIn) {
+              console.log(`User elhagyta a(z) ${locationName} zónát - Auto checkout`);
+              handleCheckOut();
+            }
+          }
+        }
+      );
+    })();
+
+    return () => {
+      if (locationSubscription) {
+        locationSubscription.remove();
+      }
+    };
+  }, [gpsEnabled, locationPermission, locationName, isCheckedIn]);
 
   // Realtime Firestore listener
   useEffect(() => {
@@ -62,7 +116,6 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     return () => unsubscribe();
   }, [locationName, userProfile?.uid]);
 
-  // Create member object
   const createMemberObject = (): LocationMember | null => {
     if (!userProfile) return null;
 
@@ -96,9 +149,13 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     };
   };
 
-  // Check-in function
   const handleCheckIn = async () => {
     if (!userProfile) return;
+
+    if (gpsEnabled && !isInsideZone) {
+      Alert.alert('GPS Hiba', 'Nem vagy a zónában! Nem tudsz bejelentkezni.');
+      return;
+    }
 
     const memberObject = createMemberObject();
     if (!memberObject) return;
@@ -125,7 +182,6 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     }
   };
 
-  // Check-out function
   const handleCheckOut = async () => {
     if (!userProfile) return;
 
@@ -158,10 +214,14 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     }
   };
 
-  // Flame function
   const handleFlame = async () => {
     if (!lastCheckout || !userProfile) return;
     if (lastCheckout.locationName !== locationName) return;
+
+    if (gpsEnabled && !isInsideZone) {
+      Alert.alert('GPS Hiba', 'Nem vagy a zónában! Nem tudsz visszavenni.');
+      return;
+    }
 
     try {
       const locationRef = doc(db, 'locations', locationName);
@@ -195,7 +255,6 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     }
   };
 
-  // Food/Phone function (TOGGLE!)
   const handleFoodPhone = async () => {
     if (!userProfile || !isCheckedIn) return;
 
@@ -211,14 +270,11 @@ export default function LocationScreen({ locationName, locationTitle }: Location
           const currentMember = currentMembers[userIndex];
           let newDisplayName = currentMember.displayName;
 
-          // Check ha van már 🍔📞
           const hasFoodPhone = newDisplayName.includes('🍔📞');
 
           if (hasFoodPhone) {
-            // REMOVE 🍔📞
             newDisplayName = newDisplayName.replace(/🍔📞\s*/g, '');
           } else {
-            // ADD 🍔📞 (flame után, ha van)
             if (newDisplayName.startsWith('🔥 ')) {
               newDisplayName = `🔥 🍔📞 ${newDisplayName.replace(/^🔥\s*/, '')}`;
             } else {
@@ -245,7 +301,6 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     }
   };
 
-  // Check if flame button should be enabled
   const canUseFlame = () => {
     if (!lastCheckout) return false;
     if (lastCheckout.locationName !== locationName) return false;
@@ -263,6 +318,24 @@ export default function LocationScreen({ locationName, locationTitle }: Location
 
   return (
     <View style={styles.container}>
+      {/* GPS Toggle Button - LEJJEBB */}
+      <TouchableOpacity
+        style={[
+          styles.gpsToggle,
+          gpsEnabled ? styles.gpsToggleOn : styles.gpsToggleOff
+        ]}
+        onPress={() => setGpsEnabled(!gpsEnabled)}
+      >
+        <Text style={styles.gpsToggleText}>
+          GPS: {gpsEnabled ? 'ON' : 'OFF'}
+        </Text>
+        {gpsEnabled && (
+          <Text style={styles.gpsZoneText}>
+            {isInsideZone ? '✅ Zónában' : '❌ Kívül'}
+          </Text>
+        )}
+      </TouchableOpacity>
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{locationTitle}</Text>
         <Text style={styles.headerSubtitle}>Sorban: {members.length} fő</Text>
@@ -354,10 +427,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f9fafb',
   },
+  gpsToggle: {
+    position: 'absolute',
+    top: 50,
+    left: 10,
+    zIndex: 1000,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    minWidth: 90,
+  },
+  gpsToggleOn: {
+    backgroundColor: '#10b981',
+  },
+  gpsToggleOff: {
+    backgroundColor: '#6b7280',
+  },
+  gpsToggleText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  gpsZoneText: {
+    color: '#fff',
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 2,
+  },
   header: {
     backgroundColor: '#4f46e5',
     padding: 20,
     alignItems: 'center',
+    paddingTop: 60,
   },
   headerTitle: {
     fontSize: 24,
