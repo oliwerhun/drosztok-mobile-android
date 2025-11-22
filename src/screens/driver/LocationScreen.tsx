@@ -304,6 +304,14 @@ export default function LocationScreen({ locationName, locationTitle }: Location
     return true;
   };
 
+  const getGpsButtonStyle = () => {
+    if (gpsEnabled) {
+      return isInsideZone ? styles.gpsToggleGreen : styles.gpsToggleRed;
+    } else {
+      return styles.gpsToggleGreen;
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -314,26 +322,19 @@ export default function LocationScreen({ locationName, locationTitle }: Location
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={[
-          styles.gpsToggle,
-          gpsEnabled ? styles.gpsToggleOn : styles.gpsToggleOff
-        ]}
-        onPress={() => setGpsEnabled(!gpsEnabled)}
-      >
-        <Text style={styles.gpsToggleText}>
-          GPS: {gpsEnabled ? 'ON' : 'OFF'}
-        </Text>
-        {gpsEnabled && (
-          <Text style={styles.gpsZoneText}>
-            {isInsideZone ? '✅ Zónában' : '❌ Kívül'}
-          </Text>
-        )}
-      </TouchableOpacity>
-
       <View style={styles.header}>
+        <TouchableOpacity
+          style={[styles.gpsToggle, getGpsButtonStyle()]}
+          onPress={() => setGpsEnabled(!gpsEnabled)}
+        >
+          <Text style={styles.gpsToggleText}>
+            GPS: {gpsEnabled ? 'ON' : 'OFF'}
+          </Text>
+        </TouchableOpacity>
+
         <Text style={styles.headerTitle}>{locationTitle}</Text>
-        <Text style={styles.headerSubtitle}>Sorban: {members.length} fő</Text>
+        
+        <View style={styles.headerSpacer} />
       </View>
 
       <ScrollView style={styles.membersList}>
@@ -422,21 +423,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f9fafb',
   },
+  header: {
+    backgroundColor: '#4f46e5',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   gpsToggle: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    zIndex: 1000,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
     minWidth: 90,
   },
-  gpsToggleOn: {
+  gpsToggleGreen: {
     backgroundColor: '#10b981',
   },
-  gpsToggleOff: {
-    backgroundColor: '#6b7280',
+  gpsToggleRed: {
+    backgroundColor: '#ef4444',
   },
   gpsToggleText: {
     color: '#fff',
@@ -444,26 +449,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  gpsZoneText: {
-    color: '#fff',
-    fontSize: 10,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  header: {
-    backgroundColor: '#4f46e5',
-    padding: 16,
-    alignItems: 'center',
-  },
   headerTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
+    flex: 1,
+    textAlign: 'center',
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#c7d2fe',
-    marginTop: 4,
+  headerSpacer: {
+    width: 90,
   },
   membersList: {
     flex: 1,
@@ -530,7 +524,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    padding: 16,
+    paddingVertical: 11,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -543,11 +537,9 @@ const styles = StyleSheet.create({
   },
   flameButton: {
     backgroundColor: '#ef4444',
-    maxWidth: 70,
   },
   foodPhoneButton: {
     backgroundColor: '#3b82f6',
-    maxWidth: 70,
   },
   buttonDisabled: {
     opacity: 0.5,
