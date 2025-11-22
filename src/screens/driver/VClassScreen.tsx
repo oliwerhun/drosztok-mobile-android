@@ -12,12 +12,8 @@ import { doc, onSnapshot, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { LocationMember } from '../../types';
-import * as Location from 'expo-location';
-import { isPointInPolygon, geofencedLocations } from '../../services/GeofenceService';
 
-interface LocationScreenProps {
-  locationName: string;
-  locationTitle: string;
+interface VClassScreenProps {
   gpsEnabled: boolean;
 }
 
@@ -27,65 +23,16 @@ interface LastCheckoutData {
   index: number;
 }
 
-export default function LocationScreen({ locationName, locationTitle, gpsEnabled }: LocationScreenProps) {
+export default function VClassScreen({ gpsEnabled }: VClassScreenProps) {
   const { userProfile } = useAuth();
+  const [activeSubTab, setActiveSubTab] = useState<'sor' | 'rendelesek'>('sor');
   const [members, setMembers] = useState<LocationMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCheckedIn, setIsCheckedIn] = useState(false);
   const [lastCheckout, setLastCheckout] = useState<LastCheckoutData | null>(null);
-  
-  const [isInsideZone, setIsInsideZone] = useState(false);
-  const [locationPermission, setLocationPermission] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocationPermission(status === 'granted');
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (!gpsEnabled || !locationPermission) return;
-
-    let locationSubscription: Location.LocationSubscription | null = null;
-
-    (async () => {
-      locationSubscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000,
-          distanceInterval: 10,
-        },
-        (location) => {
-          const userPoint = {
-            lat: location.coords.latitude,
-            lng: location.coords.longitude,
-          };
-
-          if (geofencedLocations[locationName]) {
-            const insideZone = isPointInPolygon(userPoint, geofencedLocations[locationName].polygon);
-            setIsInsideZone(insideZone);
-
-            if (!insideZone && isCheckedIn) {
-              console.log(`User elhagyta a(z) ${locationName} zónát - Auto checkout`);
-              handleCheckOut();
-            }
-          }
-        }
-      );
-    })();
-
-    return () => {
-      if (locationSubscription) {
-        locationSubscription.remove();
-      }
-    };
-  }, [gpsEnabled, locationPermission, locationName, isCheckedIn]);
-
-  useEffect(() => {
-    if (!locationName) return;
-
-    const locationRef = doc(db, 'locations', locationName);
+    const locationRef = doc(db, 'locations', 'V-Osztály');
     
     const unsubscribe = onSnapshot(
       locationRef,
@@ -110,31 +57,12 @@ export default function LocationScreen({ locationName, locationTitle, gpsEnabled
     );
 
     return () => unsubscribe();
-  }, [locationName, userProfile?.uid]);
+  }, [userProfile?.uid]);
 
   const createMemberObject = (): LocationMember | null => {
     if (!userProfile) return null;
 
-    let displayName = '';
-    switch (userProfile.userType) {
-      case 'Taxi':
-        displayName = `${userProfile.username}S - ${userProfile.licensePlate}`;
-        break;
-      case 'Kombi Taxi':
-        displayName = `${userProfile.username}SK - ${userProfile.licensePlate}`;
-        break;
-      case 'V-Osztály':
-        displayName = `${userProfile.username}V - ${userProfile.licensePlate}`;
-        break;
-      case 'VIP':
-        displayName = `${userProfile.username} - ${userProfile.licensePlate}`;
-        break;
-      case 'VIP Kombi':
-        displayName = `${userProfile.username}K - ${userProfile.licensePlate}`;
-        break;
-      default:
-        displayName = `${userProfile.username} - ${userProfile.licensePlate}`;
-    }
+    let displayName = `${userProfile.username}V - ${userProfile.licensePlate}`;
 
     return {
       uid: userProfile.uid,
@@ -148,18 +76,13 @@ export default function LocationScreen({ locationName, locationTitle, gpsEnabled
   const handleCheckIn = async () => {
     if (!userProfile) return;
 
-    if (gpsEnabled && !isInsideZone) {
-      Alert.alert('GPS Hiba', 'Nem vagy a zónában! Nem tudsz bejelentkezni.');
-      return;
-    }
-
     const memberObject = createMemberObject();
     if (!memberObject) return;
 
     setLastCheckout(null);
 
     try {
-      const locationRef = doc(db, 'locations', locationName);
+      const locationRef = doc(db, 'locations', 'V-Osztály');
       const docSnap = await getDoc(locationRef);
 
       if (docSnap.exists()) {
@@ -182,7 +105,7 @@ export default function LocationScreen({ locationName, locationTitle, gpsEnabled
     if (!userProfile) return;
 
     try {
-      const locationRef = doc(db, 'locations', locationName);
+      const locationRef = doc(db, 'locations', 'V-Osztály');
       const docSnap = await getDoc(locationRef);
 
       if (docSnap.exists()) {
@@ -193,7 +116,7 @@ export default function LocationScreen({ locationName, locationTitle, gpsEnabled
           const memberToRemove = currentMembers[userIndex];
           
           setLastCheckout({
-            locationName,
+            locationName: 'V-Osztály',
             memberData: memberToRemove,
             index: userIndex,
           });
@@ -212,15 +135,9 @@ export default function LocationScreen({ locationName, locationTitle, gpsEnabled
 
   const handleFlame = async () => {
     if (!lastCheckout || !userProfile) return;
-    if (lastCheckout.locationName !== locationName) return;
-
-    if (gpsEnabled && !isInsideZone) {
-      Alert.alert('GPS Hiba', 'Nem vagy a zónában! Nem tudsz visszavenni.');
-      return;
-    }
 
     try {
-      const locationRef = doc(db, 'locations', locationName);
+      const locationRef = doc(db, 'locations', 'V-Osztály');
       const docSnap = await getDoc(locationRef);
 
       if (docSnap.exists()) {
@@ -255,7 +172,7 @@ export default function LocationScreen({ locationName, locationTitle, gpsEnabled
     if (!userProfile || !isCheckedIn) return;
 
     try {
-      const locationRef = doc(db, 'locations', locationName);
+      const locationRef = doc(db, 'locations', 'V-Osztály');
       const docSnap = await getDoc(locationRef);
 
       if (docSnap.exists()) {
@@ -299,7 +216,6 @@ export default function LocationScreen({ locationName, locationTitle, gpsEnabled
 
   const canUseFlame = () => {
     if (!lastCheckout) return false;
-    if (lastCheckout.locationName !== locationName) return false;
     if (isCheckedIn) return false;
     return true;
   };
@@ -314,81 +230,127 @@ export default function LocationScreen({ locationName, locationTitle, gpsEnabled
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{locationTitle}</Text>
+      {/* Sub-tab gombok */}
+      <View style={styles.subTabBar}>
+        <TouchableOpacity
+          style={[
+            styles.subTab,
+            activeSubTab === 'sor' && styles.subTabActive,
+          ]}
+          onPress={() => setActiveSubTab('sor')}
+        >
+          <Text
+            style={[
+              styles.subTabText,
+              activeSubTab === 'sor' && styles.subTabTextActive,
+            ]}
+          >
+            V-Osztály Sor
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.subTab,
+            activeSubTab === 'rendelesek' && styles.subTabActive,
+          ]}
+          onPress={() => setActiveSubTab('rendelesek')}
+        >
+          <Text
+            style={[
+              styles.subTabText,
+              activeSubTab === 'rendelesek' && styles.subTabTextActive,
+            ]}
+          >
+            Rendelések
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.membersList}>
-        {members.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Nincs itt senki.</Text>
+      {/* Content */}
+      {activeSubTab === 'sor' ? (
+        <>
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>V-Osztály Sor</Text>
           </View>
-        ) : (
-          members.map((member, index) => (
-            <View key={member.uid} style={styles.memberItem}>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberPosition}>{index + 1}.</Text>
-                <Text style={styles.memberName}>{member.displayName}</Text>
+
+          <ScrollView style={styles.membersList}>
+            {members.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>Nincs itt senki.</Text>
               </View>
-              {member.uid === userProfile?.uid && (
-                <View style={styles.youBadge}>
-                  <Text style={styles.youBadgeText}>Te</Text>
+            ) : (
+              members.map((member, index) => (
+                <View key={member.uid} style={styles.memberItem}>
+                  <View style={styles.memberInfo}>
+                    <Text style={styles.memberPosition}>{index + 1}.</Text>
+                    <Text style={styles.memberName}>{member.displayName}</Text>
+                  </View>
+                  {member.uid === userProfile?.uid && (
+                    <View style={styles.youBadge}>
+                      <Text style={styles.youBadgeText}>Te</Text>
+                    </View>
+                  )}
                 </View>
-              )}
-            </View>
-          ))
-        )}
-      </ScrollView>
+              ))
+            )}
+          </ScrollView>
 
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.checkInButton,
-            isCheckedIn && styles.buttonDisabled,
-          ]}
-          onPress={handleCheckIn}
-          disabled={isCheckedIn}
-        >
-          <Text style={styles.buttonText}>Be</Text>
-        </TouchableOpacity>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.checkInButton,
+                isCheckedIn && styles.buttonDisabled,
+              ]}
+              onPress={handleCheckIn}
+              disabled={isCheckedIn}
+            >
+              <Text style={styles.buttonText}>Be</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.checkOutButton,
-            !isCheckedIn && styles.buttonDisabled,
-          ]}
-          onPress={handleCheckOut}
-          disabled={!isCheckedIn}
-        >
-          <Text style={styles.buttonText}>Ki</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.checkOutButton,
+                !isCheckedIn && styles.buttonDisabled,
+              ]}
+              onPress={handleCheckOut}
+              disabled={!isCheckedIn}
+            >
+              <Text style={styles.buttonText}>Ki</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.flameButton,
-            !canUseFlame() && styles.buttonDisabled,
-          ]}
-          onPress={handleFlame}
-          disabled={!canUseFlame()}
-        >
-          <Text style={styles.flameText}>🔥</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.flameButton,
+                !canUseFlame() && styles.buttonDisabled,
+              ]}
+              onPress={handleFlame}
+              disabled={!canUseFlame()}
+            >
+              <Text style={styles.flameText}>🔥</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.foodPhoneButton,
-            !isCheckedIn && styles.buttonDisabled,
-          ]}
-          onPress={handleFoodPhone}
-          disabled={!isCheckedIn}
-        >
-          <Text style={styles.foodPhoneText}>🍔📞</Text>
-        </TouchableOpacity>
-      </View>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.foodPhoneButton,
+                !isCheckedIn && styles.buttonDisabled,
+              ]}
+              onPress={handleFoodPhone}
+              disabled={!isCheckedIn}
+            >
+              <Text style={styles.foodPhoneText}>🍔📞</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : (
+        <View style={styles.placeholderContainer}>
+          <Text style={styles.placeholderText}>Rendelések hamarosan...</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -403,6 +365,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f9fafb',
+  },
+  subTabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  subTab: {
+    flex: 1,
+    paddingVertical: 6,
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+  },
+  subTabActive: {
+    backgroundColor: '#1f2937',
+  },
+  subTabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  subTabTextActive: {
+    color: '#fff',
   },
   header: {
     backgroundColor: '#4f46e5',
@@ -510,5 +495,14 @@ const styles = StyleSheet.create({
   },
   foodPhoneText: {
     fontSize: 20,
+  },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: '#6b7280',
   },
 });

@@ -1,13 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
 import LocationScreen from './LocationScreen';
+import VClassScreen from './VClassScreen';
+import * as Location from 'expo-location';
 
 export default function DashboardScreen() {
   const { userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('Akadémia');
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        console.log('GPS permission granted');
+      }
+    })();
+  }, []);
 
   const getTabs = () => {
     let tabs = ['Akadémia', 'Belváros', 'Budai', 'Conti', 'Crowne', 'Kozmo', 'Reptér'];
@@ -59,26 +71,21 @@ export default function DashboardScreen() {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'Akadémia':
-        return <LocationScreen locationName="Akadémia" locationTitle="Akadémia Sor" />;
+        return <LocationScreen locationName="Akadémia" locationTitle="Akadémia Sor" gpsEnabled={gpsEnabled} />;
       case 'Belváros':
-        return <LocationScreen locationName="Belváros" locationTitle="Belvárosi Sor" />;
+        return <LocationScreen locationName="Belváros" locationTitle="Belvárosi Sor" gpsEnabled={gpsEnabled} />;
       case 'Budai':
-        return <LocationScreen locationName="Budai" locationTitle="Budai Sor" />;
+        return <LocationScreen locationName="Budai" locationTitle="Budai Sor" gpsEnabled={gpsEnabled} />;
       case 'Conti':
-        return <LocationScreen locationName="Conti" locationTitle="Conti Sor" />;
+        return <LocationScreen locationName="Conti" locationTitle="Conti Sor" gpsEnabled={gpsEnabled} />;
       case 'Crowne':
-        return <LocationScreen locationName="Crowne" locationTitle="Crowne Plaza Sor" />;
+        return <LocationScreen locationName="Crowne" locationTitle="Crowne Plaza Sor" gpsEnabled={gpsEnabled} />;
       case 'Kozmo':
-        return <LocationScreen locationName="Kozmo" locationTitle="Kozmo Sor" />;
+        return <LocationScreen locationName="Kozmo" locationTitle="Kozmo Sor" gpsEnabled={gpsEnabled} />;
       case 'Reptér':
-        return <LocationScreen locationName="Reptér" locationTitle="Reptéri Sor" />;
+        return <LocationScreen locationName="Reptér" locationTitle="Reptéri Sor" gpsEnabled={gpsEnabled} />;
       case 'V-Osztály':
-        return (
-          <View style={styles.placeholderContainer}>
-            <Text style={styles.placeholderTitle}>V-Osztály Sor</Text>
-            <Text style={styles.placeholderText}>Hamarosan...</Text>
-          </View>
-        );
+        return <VClassScreen gpsEnabled={gpsEnabled} />;
       case '213':
         return (
           <View style={styles.placeholderContainer}>
@@ -163,7 +170,20 @@ export default function DashboardScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>DROSZTOK</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerTitle}>DROSZTOK</Text>
+          <TouchableOpacity
+            style={[
+              styles.gpsToggle,
+              gpsEnabled ? styles.gpsToggleOn : styles.gpsToggleOff
+            ]}
+            onPress={() => setGpsEnabled(!gpsEnabled)}
+          >
+            <Text style={styles.gpsToggleText}>
+              GPS: {gpsEnabled ? 'ON' : 'OFF'}
+            </Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.headerRight}>
           <Text style={styles.welcomeText}>Szia, {userProfile?.username}!</Text>
           <TouchableOpacity onPress={handleLogout}>
@@ -220,10 +240,33 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  gpsToggle: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    minWidth: 70,
+  },
+  gpsToggleOn: {
+    backgroundColor: '#10b981',
+  },
+  gpsToggleOff: {
+    backgroundColor: '#ef4444',
+  },
+  gpsToggleText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   headerRight: {
     alignItems: 'flex-end',

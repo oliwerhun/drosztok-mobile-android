@@ -1608,3 +1608,152 @@ DashboardScreen
 
 **Következő alkalom:** V-Osztály Screen (Sub-tabok: Sor + Rendelések)
 
+
+---
+
+## 🆕 FRISSÍTÉS - 2025-11-23 00:00
+
+### 21. GPS Gomb Migráció - KÉSZ 📍
+✅ **GPS toggle átrakva a main header-be (DROSZTOK mellé)**
+
+**Változások:**
+- ❌ GPS gomb eltávolítva LocationScreen header-ből
+- ✅ GPS gomb hozzáadva DashboardScreen header-hez (DROSZTOK mellé)
+- ✅ GPS state management DashboardScreen-ben
+- ✅ GPS prop átadás LocationScreen-nek (`gpsEnabled`)
+- ✅ GPS színlogika megfordítva:
+  - GPS OFF → Piros (disabled)
+  - GPS ON → Zöld (enabled)
+
+**GPS gomb elhelyezés:**
+```
+┌────────────────────────────────────┐
+│ DROSZTOK [GPS: OFF] | Szia, 012!  │
+│                      Kijelentkezés │
+└────────────────────────────────────┘
+```
+
+---
+
+### 22. V-Osztály Screen - KÉSZ 📑
+✅ **VClassScreen.tsx létrehozva - Sub-tabok működnek**
+
+**Sub-tab struktura:**
+```
+┌────────────────┬────────────────┐
+│ V-Osztály Sor  │  Rendelések    │
+└────────────────┴────────────────┘
+```
+
+**Sub-tab gombok:**
+- ✅ 50-50% szélesség (`flex: 1`)
+- ✅ Magasság egyezik a main tab gombokkal (`paddingVertical: 6`)
+- ✅ Aktív/Inaktív állapot (fekete/szürke)
+
+**V-Osztály Sor tab (KÉSZ):**
+- ✅ LocationScreen-hez hasonló funkciók
+- ✅ Check-in / Check-out
+- ✅ Members lista
+- ✅ 🔥 Flame gomb
+- ✅ 🍔📞 Food/Phone gomb
+- ✅ Firestore: `locations/V-Osztály`
+- ✅ Realtime sync
+
+**Rendelések tab:**
+- ⏳ Placeholder (Hamarosan...)
+
+**TESZTELVE ÉS MŰKÖDIK:** ✅
+- V-Osztály tab megjelenik (ha jogosult)
+- Sub-tab váltás működik
+- Sor funkcionalitás teljes
+- GPS state átadás működik
+
+---
+
+## 📊 VÉGSŐ PROJEKT STÁTUSZ (MA)
+
+**Befejezett:** 92% (+2%)  
+**Mai munka:** GPS migráció + V-Osztály Screen alapok  
+**Következő (holnap):** V-Osztály Rendelések + Reptér Screen + 213
+
+**Ma elkészült komponensek:**
+- ✅ Firebase config
+- ✅ AuthContext
+- ✅ TypeScript types
+- ✅ LoginScreen (Modal password reset)
+- ✅ RegisterScreen (URH szám)
+- ✅ PendingApprovalScreen
+- ✅ AppNavigator
+- ✅ App.tsx
+- ✅ **DashboardScreen (GPS gomb header-ben)** 🆕
+- ✅ **LocationScreen (GPS prop support)** 🆕
+- ✅ **VClassScreen (Sub-tabok, Sor funkciók)** 🆕
+- ✅ GeofenceService
+
+**Holnapra maradt:**
+1. ⏳ V-Osztály Rendelések tab (Notes CRUD)
+2. ⏳ Reptér sub-tabok (Reptér + Rendelések + Emirates)
+3. ⏳ 213-as rendelések lista
+4. ⏳ Admin Panel (User management)
+5. ⏳ Térkép (Sofőrök pozíciói)
+6. ⏳ Címkiosztó (Admin funkció)
+7. ⏳ Profil szerkesztés
+
+**BECSÜLT HÁTRALEVŐ IDŐ:** ~2-3 óra fejlesztés (holnap)
+
+---
+
+## 🎯 HOLNAPI TERV
+
+### 1. V-Osztály Rendelések tab
+- Notes lista (Firestore: `locations/V-Osztály/notes`)
+- CRUD funkciók:
+  - ✏️ Note hozzáadás (csak admin)
+  - 🗑️ Note törlés (mindenki)
+  - 📝 Note szerkesztés (csak admin)
+- Realtime sync
+
+### 2. Reptér Screen
+- Sub-tabok: Reptér | Rendelések | Emirates
+- 3 különböző sor (members, notes, emiratesMembers)
+- LocationScreen-hez hasonló funkciók
+
+### 3. 213-as Screen
+- Csak rendelések lista
+- Note CRUD (törlés: mindenki, szerkesztés: admin)
+
+---
+
+## 🎉 MAI EREDMÉNYEK
+
+**Létrehozott fájlok:**
+- `src/services/GeofenceService.ts` ✅
+- `src/screens/driver/VClassScreen.tsx` ✅
+
+**Módosított fájlok:**
+- `src/screens/driver/DashboardScreen.tsx` (GPS gomb migráció) ✅
+- `src/screens/driver/LocationScreen.tsx` (GPS prop, header cleanup) ✅
+
+**Működő funkciók:**
+- ✅ Top Scroll Tab Navigation
+- ✅ GPS Toggle (global, header-ben)
+- ✅ 7 taxiállomás (Akadémia, Belváros, Budai, Conti, Crowne, Kozmo, Reptér)
+- ✅ V-Osztály Screen (Sub-tabok + Sor funkciók)
+- ✅ Check-in / Check-out
+- ✅ GPS Geofencing (auto checkout)
+- ✅ 🔥 Flame gomb
+- ✅ 🍔📞 Food/Phone gomb
+- ✅ Realtime Firestore sync
+- ✅ Loading states
+- ✅ Error handling
+- ✅ Kompakt UI
+
+---
+
+🌙 **JÓ ÉJSZAKÁT! HOLNAP FOLYTATJUK!** 🌙
+
+**Mai chat hossza:** ~200+ üzenet  
+**Következő chat:** Friss kezdés V-Osztály Rendelések-kel
+
+**Fontos:** Holnap ne felejts el beilleszteni ezt a PROGRESS_LOG.md-t az új chat-be!
+
