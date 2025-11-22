@@ -4,61 +4,45 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../../context/AuthContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
+import LocationScreen from './LocationScreen';
 
 const Tab = createBottomTabNavigator();
 
 // ========================================
-// TAB SCREEN KOMPONENSEK (Placeholder-ek)
+// LOCATION SCREEN WRAPPER KOMPONENSEK
 // ========================================
 
 const AkademiaScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Akadémia Sor</Text>
-    <Text style={styles.comingSoon}>Hamarosan...</Text>
-  </View>
+  <LocationScreen locationName="Akadémia" locationTitle="Akadémia Sor" />
 );
 
 const BelvarosScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Belvárosi Sor</Text>
-    <Text style={styles.comingSoon}>Hamarosan...</Text>
-  </View>
+  <LocationScreen locationName="Belváros" locationTitle="Belvárosi Sor" />
 );
 
 const BudaiScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Budai Sor</Text>
-    <Text style={styles.comingSoon}>Hamarosan...</Text>
-  </View>
+  <LocationScreen locationName="Budai" locationTitle="Budai Sor" />
 );
 
 const ContiScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Conti Sor</Text>
-    <Text style={styles.comingSoon}>Hamarosan...</Text>
-  </View>
+  <LocationScreen locationName="Conti" locationTitle="Conti Sor" />
 );
 
 const CrowneScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Crowne Plaza Sor</Text>
-    <Text style={styles.comingSoon}>Hamarosan...</Text>
-  </View>
+  <LocationScreen locationName="Crowne" locationTitle="Crowne Plaza Sor" />
 );
 
 const KozmoScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Kozmo Sor</Text>
-    <Text style={styles.comingSoon}>Hamarosan...</Text>
-  </View>
+  <LocationScreen locationName="Kozmo" locationTitle="Kozmo Sor" />
 );
 
 const RepterScreen = () => (
-  <View style={styles.tabContent}>
-    <Text style={styles.tabTitle}>Reptéri Sor</Text>
-    <Text style={styles.comingSoon}>Hamarosan...</Text>
-  </View>
+  <LocationScreen locationName="Reptér" locationTitle="Reptéri Sor" />
 );
+
+// ========================================
+// PLACEHOLDER SCREEN-EK (még nem kész)
+// ========================================
 
 const VClassScreen = () => (
   <View style={styles.tabContent}>
@@ -193,13 +177,7 @@ export default function DashboardScreen() {
           fontSize: 11,
           fontWeight: '600',
         },
-        headerStyle: {
-          backgroundColor: '#4f46e5',
-        },
-        headerTintColor: '#fff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        headerShown: false,
       }}
     >
       {/* 7 FŐ TAXIÁLLOMÁS */}
