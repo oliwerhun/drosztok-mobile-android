@@ -2110,3 +2110,16 @@ await Promise.all([
 
 ---
 *Build és telepítés: 2025.12.13. 14:53*
+
+## 2025.12.13. - Member Item Card Finomhangolás
+
+### Változtatás:
+- **Member Item card** (szürke doboz) padding további csökkentése
+- `paddingVertical: 8` → `paddingVertical: 6`
+- **Eredmény**: Még kompaktabb szürke doboz, minimális margó a szöveg körül
+
+### Módosított fájl:
+- `src/screens/driver/LocationScreen.tsx` - memberItem style
+
+---
+*Implementálva: 2025.12.13. 14:56*

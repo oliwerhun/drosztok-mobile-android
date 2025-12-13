@@ -664,7 +664,7 @@ const styles = StyleSheet.create({
   title: { fontWeight: 'bold' },
   count: { fontSize: 16, fontWeight: '600' },
   memberItem: {
-    paddingVertical: 8,
+    paddingVertical: 6,
     paddingHorizontal: 16,
     marginHorizontal: 16,
     marginVertical: 4,
