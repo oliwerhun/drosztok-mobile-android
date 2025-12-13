@@ -5,10 +5,15 @@ import { undoService } from './UndoService';
 
 export const LOCATIONS = ['Akadémia', 'Belváros', 'Budai', 'Conti', 'Crowne', 'Kozmo', 'Reptér', 'V-Osztály', '213'];
 
-export const checkoutFromAllLocations = async (uid: string, currentProfile?: any) => {
+export const checkoutFromAllLocations = async (uid: string, currentProfile?: any, excludeLocation?: string) => {
     if (!uid) return;
 
     for (const location of LOCATIONS) {
+        // Skip the excluded location (the one we're checking into)
+        if (excludeLocation && location === excludeLocation) {
+            continue;
+        }
+
         const locationRef = doc(db, 'locations', location);
         const docSnap = await getDoc(locationRef);
 

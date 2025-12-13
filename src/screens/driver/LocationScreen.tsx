@@ -292,9 +292,9 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         checkInTime: new Date().toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
       };
 
-      // Parallel execution: checkout from all locations AND check-in to new location
+      // Parallel execution: checkout from all locations (EXCEPT the new one) AND check-in to new location
       await Promise.all([
-        checkoutFromAllLocations(user.uid, userProfile),
+        checkoutFromAllLocations(user.uid, userProfile, locationName), // Pass locationName to exclude it
         setDoc(locationRef, { [resolvedMembersField]: arrayUnion(newMember) }, { merge: true })
       ]);
 

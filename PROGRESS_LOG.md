@@ -1995,3 +1995,78 @@ await Promise.all([
 
 ---
 *Implementálva: 2025.12.13. 14:42*
+
+## 2025.12.13. - Release APK v1.0.28 (Fast Check-in)
+
+### Build információk:
+- **Verzió**: v1.0.28_fast_checkin
+- **Build idő**: 24 másodperc
+- **APK helye**: `/Users/oliwer/build/Elitdroszt_v1.0.28_fast_checkin.apk`
+- **Telepítve**: Oppo telefon (77536d6)
+
+### Tartalmazza:
+1. **Check-in Párhuzamosítás (Promise.all)**:
+   - Checkout és check-in egyszerre fut (nem várják meg egymást)
+   - Maximális hálózati sebesség
+   - **Eredmény**: Jelentősen gyorsabb bejelentkezés
+
+2. **Instant UI** (előző verzió):
+   - Gombok azonnal megjelennek
+   - Csak lista tetején kis spinner
+
+3. **Korábbi javítások**:
+   - V-Osztály UI egyszerűsítés
+   - UI magasság egységesítés
+   - Betűméret gombok (Member Item-ekre)
+   - GPS zónák
+
+---
+*Build és telepítés: 2025.12.13. 14:44*
+
+## 2025.12.13. - Race Condition Javítás (excludeLocation)
+
+### Probléma:
+- A bejelentkezés szupergyors lett (Promise.all párhuzamosítás)
+- DE: A felhasználó nem maradt a listában (eltűnt)
+
+### Ok (Race Condition):
+**Promise.all párhuzamos végrehajtás:**
+1. `checkoutFromAllLocations` → törli a felhasználót az **ÖSSZES** lokációról
+2. `setDoc` → hozzáadja a felhasználót az új lokációhoz
+
+**Ha a checkout lassabb:**
+- setDoc hozzáadja → ✅ megjelenik
+- checkout törli (az új helyről is!) → ❌ eltűnik!
+
+### Megoldás:
+**excludeLocation paraméter hozzáadása:**
+```typescript
+// LocationService.ts
+export const checkoutFromAllLocations = async (uid: string, currentProfile?: any, excludeLocation?: string) => {
+  for (const location of LOCATIONS) {
+    // Skip the excluded location (the one we're checking into)
+    if (excludeLocation && location === excludeLocation) {
+      continue;
+    }
+    // ... checkout logic
+  }
+}
+
+// LocationScreen.tsx
+await Promise.all([
+  checkoutFromAllLocations(user.uid, userProfile, locationName), // Pass locationName to exclude it
+  setDoc(locationRef, { [resolvedMembersField]: arrayUnion(newMember) }, { merge: true })
+]);
+```
+
+### Eredmény:
+- ✅ **Szupergyors bejelentkezés** (Promise.all párhuzamosítás)
+- ✅ **Megmarad a listában** (checkout kihagyja az új lokációt)
+- ✅ **Nincs race condition**
+
+### Módosított fájlok:
+- `src/services/LocationService.ts` - excludeLocation paraméter
+- `src/screens/driver/LocationScreen.tsx` - locationName átadása
+
+---
+*Implementálva: 2025.12.13. 14:48*
