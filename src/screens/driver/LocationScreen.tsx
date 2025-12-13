@@ -554,10 +554,11 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
       {userProfile?.role === 'admin' ? (
         <View style={{ flex: 1 }}>
-          <FlatList
+          <DraggableFlatList
             data={members}
+            onDragEnd={({ data }) => handleDragEnd(data)}
             keyExtractor={(item) => item.uid}
-            renderItem={({ item }) => renderItem({ item, drag: () => { }, isActive: false } as any)}
+            renderItem={renderItem}
             ListHeaderComponent={
               loading ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
@@ -566,7 +567,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
               ) : null
             }
             contentContainerStyle={{ paddingBottom: 150 }}
-            style={{ flex: 1 }}
+            containerStyle={{ flex: 1 }}
           />
         </View>
       ) : (
