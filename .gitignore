@@ -10,3 +10,19 @@ npm-debug.*
 *.orig.*
 web-build/
 .DS_Store
+
+# Android
+android/app/build/
+android/.gradle/
+.gradle/
+*.apk
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+local.properties
+electron-dist/
+*.hprof
+
+

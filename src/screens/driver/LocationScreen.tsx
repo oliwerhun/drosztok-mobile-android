@@ -1,514 +1,598 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
-import { doc, onSnapshot, updateDoc, setDoc, getDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
+import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useAuth } from '../../context/AuthContext';
-import { LocationMember } from '../../types';
+import { db } from '../../config/firebase';
+import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
+import { useTheme } from '../../context/ThemeContext';
+import { useFontSize } from '../../context/FontSizeContext';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
-import { isPointInPolygon, geofencedLocations } from '../../services/GeofenceService';
+import { getDistance } from 'geolib';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { checkoutFromAllLocations } from '../../services/LocationService';
+
+// --- GEOFENCE DEFINITIONS ---
+const GEOFENCED_LOCATIONS: Record<string, { polygon: { lat: number; lng: number }[] }> = {
+  'Akadémia': {
+    polygon: [
+      { lat: 47.505695, lng: 19.049845 },
+      { lat: 47.506827, lng: 19.049527 },
+      { lat: 47.507495, lng: 19.055352 },
+      { lat: 47.497514, lng: 19.055229 },
+      { lat: 47.496632, lng: 19.049139 },
+      { lat: 47.492195, lng: 19.051646 },
+      { lat: 47.491865, lng: 19.050269 },
+      { lat: 47.497717, lng: 19.046456 },
+      { lat: 47.505254, lng: 19.044161 }
+    ]
+  },
+  'Csillag': {
+    polygon: [
+      { lat: 47.562291479921036, lng: 19.02616134628049 },
+      { lat: 47.562671208662096, lng: 19.02861431402625 },
+      { lat: 47.561288593345246, lng: 19.02919148290761 },
+      { lat: 47.56086990686127, lng: 19.027156962600827 }
+    ]
+  }
+};
+
+const isPointInPolygon = (point: { lat: number; lng: number }, polygon: { lat: number; lng: number }[]) => {
+  let x = point.lat, y = point.lng;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    let xi = polygon[i].lat, yi = polygon[i].lng;
+    let xj = polygon[j].lat, yj = polygon[j].lng;
+    let intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+};
+
+// Global variable to store last checkout for Undo (Flame) functionality
+let lastCheckedOut: any = null;
+
+interface Member {
+  uid: string;
+  username: string;
+  displayName?: string;
+  licensePlate?: string;
+  userType?: string;
+  checkInTime?: string;
+}
 
 interface LocationScreenProps {
   locationName: string;
-  locationTitle: string;
-  gpsEnabled: boolean;
+  gpsEnabled?: boolean;
+  firestorePath?: string; // optional custom Firestore document path, e.g., 'locations/Reptér'
+  membersField?: string; // field inside the document that holds the members array
+  geofenceName?: string; // name used to look up geofence polygon, defaults to locationName
 }
 
-interface LastCheckoutData {
-  locationName: string;
-  memberData: LocationMember;
-  index: number;
-}
-
-export default function LocationScreen({ locationName, locationTitle, gpsEnabled }: LocationScreenProps) {
-  const { userProfile } = useAuth();
-  const [members, setMembers] = useState<LocationMember[]>([]);
+const LocationScreen: React.FC<LocationScreenProps> = ({
+  locationName,
+  gpsEnabled = false,
+  firestorePath,
+  membersField = 'members',
+  geofenceName,
+}) => {
+  // Resolve defaults
+  const resolvedFirestorePath = firestorePath || `locations/${locationName}`;
+  const resolvedMembersField = membersField;
+  const resolvedGeofenceName = geofenceName || locationName;
+  const { user, userProfile } = useAuth();
+  const { theme, colors } = useTheme();
+  const { fontSize } = useFontSize();
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCheckedIn, setIsCheckedIn] = useState(false);
-  const [lastCheckout, setLastCheckout] = useState<LastCheckoutData | null>(null);
-  
-  const [isInsideZone, setIsInsideZone] = useState(false);
-  const [locationPermission, setLocationPermission] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [isInsideZone, setIsInsideZone] = useState<boolean | null>(null);
+  const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+
+  const insets = useSafeAreaInsets();
+
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocationPermission(status === 'granted');
-    })();
-  }, []);
+    let unsubscribe: () => void;
 
-  useEffect(() => {
-    if (!gpsEnabled || !locationPermission) return;
+    const fetchMembers = async () => {
+      try {
+        const [collectionName, docId] = resolvedFirestorePath.split('/');
+        const locationRef = doc(db, collectionName, docId);
 
-    let locationSubscription: Location.LocationSubscription | null = null;
-
-    (async () => {
-      locationSubscription = await Location.watchPositionAsync(
-        {
-          accuracy: Location.Accuracy.High,
-          timeInterval: 5000,
-          distanceInterval: 10,
-        },
-        (location) => {
-          const userPoint = {
-            lat: location.coords.latitude,
-            lng: location.coords.longitude,
-          };
-
-          if (geofencedLocations[locationName]) {
-            const insideZone = isPointInPolygon(userPoint, geofencedLocations[locationName].polygon);
-            setIsInsideZone(insideZone);
-
-            if (!insideZone && isCheckedIn) {
-              console.log(`User elhagyta a(z) ${locationName} zónát - Auto checkout`);
-              handleCheckOut();
-            }
+        unsubscribe = onSnapshot(locationRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setMembers(data[resolvedMembersField] || []);
+          } else {
+            setMembers([]);
           }
-        }
-      );
-    })();
+          setLoading(false);
+        });
+      } catch (error) {
+        console.error('Error fetching members:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchMembers();
 
     return () => {
-      if (locationSubscription) {
-        locationSubscription.remove();
-      }
+      if (unsubscribe) unsubscribe();
     };
-  }, [gpsEnabled, locationPermission, locationName, isCheckedIn]);
+  }, [resolvedFirestorePath, resolvedMembersField]);
 
   useEffect(() => {
-    if (!locationName) return;
+    if (!gpsEnabled) return;
 
-    const locationRef = doc(db, 'locations', locationName);
-    
-    const unsubscribe = onSnapshot(
-      locationRef,
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const membersList = data.members || [];
-          setMembers(membersList);
-          
-          const userInList = membersList.some((m: LocationMember) => m.uid === userProfile?.uid);
-          setIsCheckedIn(userInList);
-        } else {
-          setMembers([]);
-          setIsCheckedIn(false);
+    let locationSubscription: any;
+
+    const startTracking = async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setCurrentAddress('Helymeghatározás megtagadva');
+          return;
         }
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Firestore listener error:', error);
-        setLoading(false);
+
+        locationSubscription = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 5000,
+            distanceInterval: 10,
+          },
+          async (location) => {
+            const { latitude, longitude } = location.coords;
+
+            try {
+              const reverseGeocode = await Location.reverseGeocodeAsync({ latitude, longitude });
+              if (reverseGeocode.length > 0) {
+                const address = reverseGeocode[0];
+                setCurrentAddress(`${address.street || ''} ${address.streetNumber || ''}`);
+              }
+            } catch (e) {
+              console.log("Geocoding error", e);
+            }
+
+            if (GEOFENCED_LOCATIONS[resolvedGeofenceName]) {
+              const inside = isPointInPolygon({ lat: latitude, lng: longitude }, GEOFENCED_LOCATIONS[resolvedGeofenceName].polygon);
+              setIsInsideZone(inside);
+            } else {
+              setIsInsideZone(true);
+            }
+          }
+        );
+      } catch (error) {
+        console.error("Location tracking error:", error);
       }
-    );
-
-    return () => unsubscribe();
-  }, [locationName, userProfile?.uid]);
-
-  const createMemberObject = (): LocationMember | null => {
-    if (!userProfile) return null;
-
-    let displayName = '';
-    switch (userProfile.userType) {
-      case 'Taxi':
-        displayName = `${userProfile.username}S - ${userProfile.licensePlate}`;
-        break;
-      case 'Kombi Taxi':
-        displayName = `${userProfile.username}SK - ${userProfile.licensePlate}`;
-        break;
-      case 'V-Osztály':
-        displayName = `${userProfile.username}V - ${userProfile.licensePlate}`;
-        break;
-      case 'VIP':
-        displayName = `${userProfile.username} - ${userProfile.licensePlate}`;
-        break;
-      case 'VIP Kombi':
-        displayName = `${userProfile.username}K - ${userProfile.licensePlate}`;
-        break;
-      default:
-        displayName = `${userProfile.username} - ${userProfile.licensePlate}`;
-    }
-
-    return {
-      uid: userProfile.uid,
-      username: userProfile.username,
-      userType: userProfile.userType,
-      licensePlate: userProfile.licensePlate,
-      displayName,
     };
-  };
+
+    startTracking();
+
+    return () => {
+      if (locationSubscription) locationSubscription.remove();
+    };
+  }, [resolvedGeofenceName, gpsEnabled]);
+
 
   const handleCheckIn = async () => {
-    if (!userProfile) return;
+    if (!user || checkingIn || !userProfile) return;
 
-    if (gpsEnabled && !isInsideZone) {
-      Alert.alert('GPS Hiba', 'Nem vagy a zónában! Nem tudsz bejelentkezni.');
+    if (gpsEnabled && GEOFENCED_LOCATIONS[resolvedGeofenceName] && isInsideZone === false) {
+      Alert.alert("Hiba", "Nem vagy a droszt területén!");
       return;
     }
 
-    const memberObject = createMemberObject();
-    if (!memberObject) return;
-
-    setLastCheckout(null);
-
+    setCheckingIn(true);
     try {
-      const locationRef = doc(db, 'locations', locationName);
-      const docSnap = await getDoc(locationRef);
+      const [collectionName, docId] = resolvedFirestorePath.split('/');
+      const locationRef = doc(db, collectionName, docId);
 
-      if (docSnap.exists()) {
-        const currentMembers = docSnap.data().members || [];
-        await updateDoc(locationRef, {
-          members: [...currentMembers, memberObject],
-        });
-      } else {
-        await setDoc(locationRef, {
-          members: [memberObject],
-        });
+      let displayName = userProfile.username;
+
+      if (userProfile.userType === 'Taxi') displayName += `S - ${userProfile.licensePlate}`;
+      else if (userProfile.userType === 'Kombi Taxi') displayName += `SK - ${userProfile.licensePlate}`;
+      else if (userProfile.userType === 'V-Osztály') displayName += `V - ${userProfile.licensePlate}`;
+      else if (userProfile.userType === 'VIP') displayName += ` - ${userProfile.licensePlate}`;
+      else if (userProfile.userType === 'VIP Kombi') displayName += `K - ${userProfile.licensePlate}`;
+      else displayName += ` - ${userProfile.licensePlate}`;
+
+      const newMember = {
+        uid: user.uid,
+        username: userProfile.username,
+        displayName: displayName,
+        licensePlate: userProfile.licensePlate,
+        userType: userProfile.userType,
+        checkInTime: new Date().toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      // 1. Global Checkout logic
+      await checkoutFromAllLocations(user.uid, userProfile);
+
+      // 2. Main Check-in
+      await setDoc(locationRef, { [resolvedMembersField]: arrayUnion(newMember) }, { merge: true });
+
+      // 3. V-Class Double Queue Logic (City locations only)
+      if (userProfile.userType === 'V-Osztály' && locationName !== 'Reptér' && locationName !== 'Emirates') {
+        const vClassRef = doc(db, 'locations', 'V-Osztály');
+        await setDoc(vClassRef, { members: arrayUnion(newMember) }, { merge: true });
       }
+
+      lastCheckedOut = null;
+
     } catch (error) {
       console.error('Check-in error:', error);
       Alert.alert('Hiba', 'Nem sikerült bejelentkezni.');
+    } finally {
+      setCheckingIn(false);
     }
   };
 
   const handleCheckOut = async () => {
-    if (!userProfile) return;
-
+    if (!user || checkingIn) return;
+    setCheckingIn(true);
     try {
-      const locationRef = doc(db, 'locations', locationName);
+      const [collectionName, docId] = resolvedFirestorePath.split('/');
+      const locationRef = doc(db, collectionName, docId);
       const docSnap = await getDoc(locationRef);
 
       if (docSnap.exists()) {
-        const currentMembers = docSnap.data().members || [];
-        const userIndex = currentMembers.findIndex((m: LocationMember) => m.uid === userProfile.uid);
-        
+        const currentMembers = docSnap.data()[resolvedMembersField] || [];
+        const userIndex = currentMembers.findIndex((m: any) => m.uid === user.uid);
+
         if (userIndex !== -1) {
           const memberToRemove = currentMembers[userIndex];
-          
-          setLastCheckout({
-            locationName,
+
+          lastCheckedOut = {
+            locationName, // Keep for backward compatibility or specific checks
+            firestorePath: resolvedFirestorePath,
+            membersField: resolvedMembersField,
             memberData: memberToRemove,
             index: userIndex,
-          });
+            timestamp: Date.now()
+          };
 
-          const updatedMembers = currentMembers.filter((m: LocationMember) => m.uid !== userProfile.uid);
           await updateDoc(locationRef, {
-            members: updatedMembers,
+            [resolvedMembersField]: arrayRemove(memberToRemove)
           });
         }
       }
     } catch (error) {
       console.error('Check-out error:', error);
       Alert.alert('Hiba', 'Nem sikerült kijelentkezni.');
+    } finally {
+      setCheckingIn(false);
     }
   };
 
-  const handleFlame = async () => {
-    if (!lastCheckout || !userProfile) return;
-    if (lastCheckout.locationName !== locationName) return;
+  const handleFlameClick = async () => {
+    if (!user || checkingIn) return;
 
-    if (gpsEnabled && !isInsideZone) {
-      Alert.alert('GPS Hiba', 'Nem vagy a zónában! Nem tudsz visszavenni.');
+    if (!lastCheckedOut ||
+      lastCheckedOut.memberData.uid !== user.uid ||
+      lastCheckedOut.firestorePath !== resolvedFirestorePath ||
+      lastCheckedOut.membersField !== resolvedMembersField) {
+      Alert.alert('Hiba', 'Nincs visszavonható művelet.');
       return;
     }
 
+    setCheckingIn(true);
     try {
-      const locationRef = doc(db, 'locations', locationName);
+      const [collectionName, docId] = resolvedFirestorePath.split('/');
+      const locationRef = doc(db, collectionName, docId);
       const docSnap = await getDoc(locationRef);
+      let currentMembers = (docSnap.exists() && docSnap.data()[resolvedMembersField]) ? docSnap.data()[resolvedMembersField] : [];
 
-      if (docSnap.exists()) {
-        const currentMembers = docSnap.data().members || [];
-        
-        if (currentMembers.some((m: LocationMember) => m.uid === userProfile.uid)) {
-          setLastCheckout(null);
-          return;
-        }
-
-        const memberWithFlame = {
-          ...lastCheckout.memberData,
-          displayName: `🔥 ${lastCheckout.memberData.displayName.replace(/^🔥\s*/, '')}`,
-        };
-
-        const updatedMembers = [...currentMembers];
-        updatedMembers.splice(lastCheckout.index, 0, memberWithFlame);
-
-        await updateDoc(locationRef, {
-          members: updatedMembers,
-        });
-
-        setLastCheckout(null);
+      if (currentMembers.some((m: any) => m.uid === user.uid)) {
+        lastCheckedOut = null;
+        setCheckingIn(false);
+        return;
       }
+
+      let displayName = lastCheckedOut.memberData.displayName || '';
+      displayName = displayName.replace(/^[🔥🍔📞\s]+/, '');
+      displayName = '🔥 ' + displayName;
+
+      const memberToReinsert = {
+        ...lastCheckedOut.memberData,
+        displayName: displayName
+      };
+
+      let insertIndex = lastCheckedOut.index;
+      if (insertIndex > currentMembers.length) insertIndex = currentMembers.length;
+
+      currentMembers.splice(insertIndex, 0, memberToReinsert);
+
+      await updateDoc(locationRef, { [resolvedMembersField]: currentMembers });
+      lastCheckedOut = null;
+
     } catch (error) {
-      console.error('Flame error:', error);
-      Alert.alert('Hiba', 'Nem sikerült visszavenni a pozíciót.');
+      console.error("Flame error", error);
+    } finally {
+      setCheckingIn(false);
     }
   };
 
-  const handleFoodPhone = async () => {
-    if (!userProfile || !isCheckedIn) return;
-
+  const handleFoodPhoneClick = async () => {
+    if (!user || checkingIn) return;
+    setCheckingIn(true);
     try {
-      const locationRef = doc(db, 'locations', locationName);
+      const [collectionName, docId] = resolvedFirestorePath.split('/');
+      const locationRef = doc(db, collectionName, docId);
       const docSnap = await getDoc(locationRef);
+      if (!docSnap.exists()) return;
 
-      if (docSnap.exists()) {
-        const currentMembers = docSnap.data().members || [];
-        const userIndex = currentMembers.findIndex((m: LocationMember) => m.uid === userProfile.uid);
-        
-        if (userIndex !== -1) {
-          const currentMember = currentMembers[userIndex];
-          let newDisplayName = currentMember.displayName;
+      const currentMembers = docSnap.data()[resolvedMembersField] || [];
+      const userIndex = currentMembers.findIndex((m: any) => m.uid === user.uid);
 
-          const hasFoodPhone = newDisplayName.includes('🍔📞');
-
-          if (hasFoodPhone) {
-            newDisplayName = newDisplayName.replace(/🍔📞\s*/g, '');
-          } else {
-            if (newDisplayName.startsWith('🔥 ')) {
-              newDisplayName = `🔥 🍔📞 ${newDisplayName.replace(/^🔥\s*/, '')}`;
-            } else {
-              newDisplayName = `🍔📞 ${newDisplayName}`;
-            }
-          }
-
-          const updatedMember = {
-            ...currentMember,
-            displayName: newDisplayName,
-          };
-
-          const updatedMembers = [...currentMembers];
-          updatedMembers[userIndex] = updatedMember;
-
-          await updateDoc(locationRef, {
-            members: updatedMembers,
-          });
-        }
+      if (userIndex === -1) {
+        setCheckingIn(false);
+        return;
       }
+
+      const userObject = currentMembers[userIndex];
+      let currentName = userObject.displayName || '';
+
+      const foodPhonePrefix = '🍔📞 ';
+      const flamePrefix = '🔥 ';
+
+      let baseName = currentName;
+      if (baseName.startsWith(flamePrefix)) {
+        baseName = baseName.substring(flamePrefix.length);
+      }
+      if (baseName.startsWith(foodPhonePrefix)) {
+        baseName = baseName.substring(foodPhonePrefix.length);
+      }
+
+      const hasFoodPhone = currentName.includes(foodPhonePrefix);
+      let newDisplayName;
+
+      if (hasFoodPhone) {
+        newDisplayName = (currentName.startsWith(flamePrefix) ? flamePrefix : '') + baseName;
+      } else {
+        newDisplayName = (currentName.startsWith(flamePrefix) ? flamePrefix : '') + foodPhonePrefix + baseName;
+      }
+
+      currentMembers[userIndex] = {
+        ...userObject,
+        displayName: newDisplayName
+      };
+
+      await updateDoc(locationRef, { [resolvedMembersField]: currentMembers });
+
     } catch (error) {
-      console.error('Food/Phone error:', error);
-      Alert.alert('Hiba', 'Nem sikerült frissíteni.');
+      console.error("FoodPhone error", error);
+    } finally {
+      setCheckingIn(false);
     }
   };
 
-  const canUseFlame = () => {
-    if (!lastCheckout) return false;
-    if (lastCheckout.locationName !== locationName) return false;
-    if (isCheckedIn) return false;
-    return true;
+  const handleManualKick = async (uid: string) => {
+    try {
+      const [collectionName, docId] = resolvedFirestorePath.split('/');
+      const locationRef = doc(db, collectionName, docId);
+      // Fetch current list, find exact object, then remove
+      const docSnap = await getDoc(locationRef);
+      if (docSnap.exists()) {
+        const list = docSnap.data()[resolvedMembersField] || [];
+        const item = list.find((m: any) => m.uid === uid);
+        if (item) {
+          await updateDoc(locationRef, { [resolvedMembersField]: arrayRemove(item) });
+        }
+      }
+    } catch (error) {
+      console.error('Kick hiba:', error);
+      Alert.alert('Hiba', 'Nem sikerült a kiléptetés.');
+    }
   };
 
-  if (loading) {
+  const handleDragEnd = async (data: Member[]) => {
+    setMembers(data);
+    if (userProfile?.role !== 'admin') return;
+    try {
+      const [collectionName, docId] = resolvedFirestorePath.split('/');
+      const locationRef = doc(db, collectionName, docId);
+      await updateDoc(locationRef, { [resolvedMembersField]: data });
+    } catch (error) {
+      console.error("Drag update error:", error);
+    }
+  };
+
+  const renderItem = ({ item, drag, isActive }: RenderItemParams<Member>) => {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4f46e5" />
-      </View>
+      <ScaleDecorator>
+        <TouchableOpacity
+          onLongPress={drag}
+          disabled={userProfile?.role !== 'admin'}
+          style={[
+            styles.memberItem,
+            { backgroundColor: isActive ? colors.primary : colors.memberItem },
+          ]}
+        >
+          <View style={styles.memberInfo}>
+            {/* Show display name if present, otherwise fallback to username */}
+            <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text }]}>
+              {item.displayName || item.username}
+            </Text>
+            {/* License plate */}
+            {item.licensePlate ? (
+              <Text style={[styles.licensePlate, { color: isActive ? '#e5e7eb' : colors.textSecondary }]}>
+                {item.licensePlate}
+              </Text>
+            ) : null}
+            {/* Check‑in time */}
+            {item.checkInTime ? (
+              <Text style={[styles.checkInTime, { color: isActive ? '#e5e7eb' : colors.textSecondary }]}>
+                {item.checkInTime}
+              </Text>
+            ) : null}
+          </View>
+
+          {userProfile?.role === 'admin' && (
+            <TouchableOpacity onPress={() => handleManualKick(item.uid)} style={styles.kickButton}>
+              <Ionicons name="close-circle" size={24} color="#ef4444" />
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+      </ScaleDecorator>
     );
-  }
+  };
+
+  const isUserCheckedIn = members.some(m => m.uid === user?.uid);
+  const canUndo = lastCheckedOut && lastCheckedOut.memberData.uid === user?.uid && lastCheckedOut.locationName === locationName;
+
+  const buttonBaseStyle = {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginHorizontal: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2, // Fixed shadow opacity
+    shadowRadius: 1.41,
+  };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>{locationTitle}</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+
+      <View style={[styles.header, { backgroundColor: colors.locationHeader }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {isInsideZone === true ? (
+            <Ionicons name="checkmark-circle" size={28} color="#10b981" />
+          ) : isInsideZone === false ? (
+            <Ionicons name="ban" size={28} color="#ef4444" />
+          ) : null}
+          <Text style={[styles.title, { color: colors.headerText, fontSize: fontSize >= 20 ? 28 : 24 }]}>
+            {locationName}
+          </Text>
+        </View>
+        <Text style={[styles.count, { color: colors.headerText }]}>{members.length} autó</Text>
       </View>
 
-      <ScrollView style={styles.membersList}>
-        {members.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>Nincs itt senki.</Text>
-          </View>
-        ) : (
-          members.map((member, index) => (
-            <View key={member.uid} style={styles.memberItem}>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberPosition}>{index + 1}.</Text>
-                <Text style={styles.memberName}>{member.displayName}</Text>
-              </View>
-              {member.uid === userProfile?.uid && (
-                <View style={styles.youBadge}>
-                  <Text style={styles.youBadgeText}>Te</Text>
-                </View>
-              )}
-            </View>
-          ))
-        )}
-      </ScrollView>
 
-      <View style={styles.actionButtons}>
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.checkInButton,
-            isCheckedIn && styles.buttonDisabled,
-          ]}
-          onPress={handleCheckIn}
-          disabled={isCheckedIn}
-        >
-          <Text style={styles.buttonText}>Be</Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.checkOutButton,
-            !isCheckedIn && styles.buttonDisabled,
-          ]}
-          onPress={handleCheckOut}
-          disabled={!isCheckedIn}
-        >
-          <Text style={styles.buttonText}>Ki</Text>
-        </TouchableOpacity>
+      {loading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+        </View>
+      ) : (
+        <DraggableFlatList
+          data={members}
+          onDragEnd={({ data }) => handleDragEnd(data)}
+          keyExtractor={(item) => item.uid}
+          renderItem={renderItem}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          style={{ flex: 1 }}
+        />
+      )}
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.flameButton,
-            !canUseFlame() && styles.buttonDisabled,
-          ]}
-          onPress={handleFlame}
-          disabled={!canUseFlame()}
-        >
-          <Text style={styles.flameText}>🔥</Text>
-        </TouchableOpacity>
+      {/* FOOTER BUTTONS */}
+      {/* We use insets.bottom to ensure on iPhone X+ it doesn't overlap home indicator */}
+      <View style={[
+        styles.footerContainer,
+        {
+          backgroundColor: colors.footerBackground,
+          borderTopColor: colors.border,
+          paddingBottom: Math.max(insets.bottom, 10),
+          paddingTop: 10,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+        }
+      ]}>
+        <View style={{ flexDirection: 'row' }}>
+          {/* BE */}
+          <TouchableOpacity
+            style={[buttonBaseStyle, { backgroundColor: isUserCheckedIn || (gpsEnabled && isInsideZone === false) ? '#9ca3af' : '#10b981' }]}
+            onPress={handleCheckIn}
+            disabled={isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
+          >
+            <Text style={styles.footerButtonText}>Be</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.button,
-            styles.foodPhoneButton,
-            !isCheckedIn && styles.buttonDisabled,
-          ]}
-          onPress={handleFoodPhone}
-          disabled={!isCheckedIn}
-        >
-          <Text style={styles.foodPhoneText}>🍔📞</Text>
-        </TouchableOpacity>
+          {/* KI */}
+          <TouchableOpacity
+            style={[buttonBaseStyle, { backgroundColor: !isUserCheckedIn ? '#9ca3af' : '#f97316' }]}
+            onPress={handleCheckOut}
+            disabled={!isUserCheckedIn || checkingIn}
+          >
+            <Text style={styles.footerButtonText}>Ki</Text>
+          </TouchableOpacity>
+
+          {/* LÁNG */}
+          <TouchableOpacity
+            style={[buttonBaseStyle, { backgroundColor: !canUndo || isUserCheckedIn || (gpsEnabled && isInsideZone === false) ? '#9ca3af' : '#ef4444' }]}
+            onPress={handleFlameClick}
+            disabled={!canUndo || isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
+          >
+            <Text style={{ fontSize: 20 }}>🔥</Text>
+          </TouchableOpacity>
+
+          {/* FOOD/PHONE */}
+          <TouchableOpacity
+            style={[buttonBaseStyle, { backgroundColor: !isUserCheckedIn || (gpsEnabled && isInsideZone === false) ? '#9ca3af' : '#3b82f6' }]}
+            onPress={handleFoodPhoneClick}
+            disabled={!isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
+          >
+            <Text style={{ fontSize: 20 }}>🍔📞</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f9fafb',
-  },
+  container: { flex: 1 },
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
-    backgroundColor: '#4f46e5',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  membersList: {
-    flex: 1,
     padding: 16,
-  },
-  emptyState: {
-    padding: 40,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
-  emptyText: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
+  title: { fontWeight: 'bold' },
+  count: { fontSize: 16, fontWeight: '600' },
   memberItem: {
-    backgroundColor: '#fff',
     padding: 16,
+    marginHorizontal: 16,
+    marginVertical: 4,
     borderRadius: 8,
-    marginBottom: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowRadius: 1,
+    elevation: 1,
   },
-  memberInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  memberPosition: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#4f46e5',
-    marginRight: 12,
-    minWidth: 30,
-  },
-  memberName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    flex: 1,
-  },
-  youBadge: {
-    backgroundColor: '#10b981',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  youBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 8,
-    backgroundColor: '#fff',
+  memberInfo: { flex: 1 },
+  memberName: { fontSize: 16, fontWeight: '600', marginBottom: 2 },
+  licensePlate: { fontSize: 13 },
+  checkInTime: { fontSize: 12, marginTop: 2 },
+  kickButton: { padding: 8 },
+  footerContainer: {
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    paddingHorizontal: 10,
+    elevation: 10, // Added elevation to ensure shadow on Android
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  button: {
-    flex: 1,
-    paddingVertical: 11,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkInButton: {
-    backgroundColor: '#10b981',
-  },
-  checkOutButton: {
-    backgroundColor: '#f59e0b',
-  },
-  flameButton: {
-    backgroundColor: '#ef4444',
-  },
-  foodPhoneButton: {
-    backgroundColor: '#3b82f6',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  flameText: {
-    fontSize: 24,
-  },
-  foodPhoneText: {
-    fontSize: 20,
-  },
+  footerButtonText: { color: '#ffffff', fontSize: 16, fontWeight: 'bold' },
 });
+
+export default LocationScreen;
+

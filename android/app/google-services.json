@@ -1,0 +1,29 @@
+{
+    "project_info": {
+        "project_number": "652103280844",
+        "project_id": "elitdroszt-597f4",
+        "storage_bucket": "elitdroszt-597f4.firebasestorage.app"
+    },
+    "client": [
+        {
+            "client_info": {
+                "mobilesdk_app_id": "1:652103280844:android:62bde0b8835919d8b17a69",
+                "android_client_info": {
+                    "package_name": "hu.elitdroszt.mobile"
+                }
+            },
+            "oauth_client": [],
+            "api_key": [
+                {
+                    "current_key": "AIzaSyDZvQ9Px_tidu29rm7IDheZ2VuGnY_3mh4"
+                }
+            ],
+            "services": {
+                "appinvite_service": {
+                    "other_platform_oauth_client": []
+                }
+            }
+        }
+    ],
+    "configuration_version": "1"
+}

@@ -1,7 +1,9 @@
-package com.anonymous.drosztokmobile
+package hu.elitdroszt.mobile
 
 import android.os.Build
 import android.os.Bundle
+import com.anonymous.drosztokmobile.BuildConfig
+import com.anonymous.drosztokmobile.R
 
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -57,5 +59,16 @@ class MainActivity : ReactActivity() {
       // Use the default back button implementation on Android S
       // because it's doing more than [Activity.moveTaskToBack] in fact.
       super.invokeDefaultOnBackPressed()
+  }
+
+  override fun getResources(): android.content.res.Resources {
+    val resources = super.getResources()
+    if (resources.configuration.fontScale != 1.0f) {
+      val configuration = resources.configuration
+      configuration.fontScale = 1.0f
+      val metrics = resources.displayMetrics
+      resources.updateConfiguration(configuration, metrics)
+    }
+    return resources
   }
 }

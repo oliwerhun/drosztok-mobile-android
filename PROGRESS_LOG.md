@@ -1,9 +1,10 @@
 # DROSZTOK MOBILE - FEJLESZTÉSI NAPLÓ
-**Utolsó frissítés:** 2025-11-22 18:50
+**Utolsó frissítés:** 2025-12-10 15:58
 
 ---
 
 ## 📋 PROJEKT INFORMÁCIÓK
+
 
 **Projekt neve:** DROSZTOK Mobile  
 **Platform:** React Native (Expo)  
@@ -15,6 +16,87 @@
 ---
 
 ## ✅ TELJESÍTETT LÉPÉSEK
+
+### 🔄 V18 (RESTORE-ALL) - 2025-12-10
+- **Situation:** A Package Name hiba javítása után (V16-V17) az app stabil lett, így visszaépítettük az optimalizálásokat.
+- **Action:**
+  - `LocationScreen.tsx`: Visszakerültek a státusz ikonok.
+  - `AuthContext.tsx`: Visszakerült a `useMemo`.
+  - `DashboardScreen.tsx`: Visszakerült a `useMemo`.
+  - **V19 (FULL-FEATURES):** 
+    - Minden funkció helyreállítva és implementálva a LocationScreen-en.
+    - **Láng (🔥) gomb:** Undo check-out funkció, eredeti pozíció visszaállítása.
+    - **Food/Phone (🍔📞) gomb:** Státuszjelzés az autó mellett.
+    - **Footer UI:** 4 gombos elrendezés (Be, Ki, Láng, Food/Phone).
+    - **GPS Geofence:** Zóna alapú belépés korlátozás.
+    - **verzió:** 1.0.19 (Android Build 15).
+    - Ezzel az alkalmazás funkcionalitása megegyezik a webes verzióval.
+- **Status:** Android Build (V14/1.0.18) folyamatban.
+
+### 🏆 SIKERES HIBAJAVÍTÁS - 2025-12-10
+- **Probléma:** A felhasználót folyamatosan "kidobta" a rendszer (LocationScreen remount loop).
+- **Megoldás:** A Package Name (Android) és Bundle ID (iOS) nem egyezett a Firebase regisztrációval.
+  - **Android:** `hu.elitdroszt.mobile` (Javítva V16-ban)
+  - **iOS:** `com.oliwerhun.elitdroszt` (Javítva V17-ben)
+- **Eredmény:** A stabil csomagnevekkel a Firebase kapcsolat helyreállt, az app stabil, nincs több véletlenszerű kiléptetés.
+
+### �🍏 V17 (IOS-FIX) - 2025-12-10
+- **Situation:** Kiderült, hogy az iOS bundle ID (`com.oliwerhun.elitdroszt`) eltér az Android package name-től (`hu.elitdroszt.mobile`) a Firebase-ben.
+- **Action:**
+  - `app.json` iOS részében visszaállítva a bundleID `com.oliwerhun.elitdroszt`-ra.
+  - `ios/GoogleService-Info.plist` létrehozva a helyes adatokkal.
+  - Verzió: 1.0.17.
+- **Status:** Android Build (V13/1.0.17) indítása a szinkronizáció érdekében.
+
+### 🔧 V16 (CONFIG-SYNC) - 2025-12-10
+- **CRITICAL FIX:** A kódban lévő csomagnév (`com.anonymous.drosztokmobile`) és a Firebase-ben regisztrált csomagnév (`hu.elitdroszt.mobile`) nem egyezett.
+- **Action:**
+  - `google-services.json` létrehozva.
+  - `app.json` és `build.gradle` frissítve `hu.elitdroszt.mobile`-ra.
+  - Verzió: 1.0.16.
+
+### 🧪 V15 (V-TEST-ZONE) - 2025-12-10
+- **Feature:** A felhasználó otthonról szeretne tesztelni, ezért kért egy "Csillag" nevű privát drosztot, ami csak neki (user: 646) jelenik meg.
+- **Action:** 
+  - `LocationScreen.tsx`: Hozzáadtuk a "Csillag" zóna koordinátáit. A `handleCheckIn`-t átírtuk `setDoc({ ... }, { merge: true })`-ra.
+  - `DashboardScreen.tsx`: Ha a user '646', a 'Csillag' fül megjelenik legelöl.
+  - A kódalap egyébként a V14 (V-ROLLBACK-SAFETY) tiszta és stabil állapotát tükrözi.
+- **Status:** Android Build (V11/1.0.15) folyamatban.
+
+### � V14 (V-ROLLBACK-SAFETY) - 2025-12-10
+- **Situation:** A V11 (memo), V12 (conditional header remove) és V13 (auth context fix) kísérletek nem oldották meg az alapvető instabilitási problémát.
+- **Action:** RADIKÁLIS VISSZALÉPÉS.
+  - `AuthContext.tsx`: Visszaállítva eredeti állapotra (no `useMemo`).
+  - `DashboardScreen.tsx`: Visszaállítva eredeti állapotra (no `useMemo`, `renderTabContent`).
+  - `LocationScreen.tsx`: Teljesen megtisztítva minden kondicionális renderelési kísérlettől a fejlécben.
+- **Goal:** Visszaállítani a kódot egy olyan állapotba, ami *még a conditional header ikonok bevezetése előtt* volt.
+- **Status:** Android Build (V10/1.0.14) folyamatban.
+
+### �🔧 V13 (V-CTX-FIX) - 2025-12-10
+- **Diagnosis:** A `DashboardScreen` és `LocationScreen` indokolatlanul sokszor renderelődik újra. Mivel mindkettő `useAuth()` hookot használ, gyanús, hogy az `AuthContext` provider minden renderkor új objektumot ad vissza.
+- **Action:** `AuthContext.tsx`-ben `useMemo` bevezetése a Provider value objektumra. Így a fogyasztók csak akkor renderelődnek újra, ha a `user`, `userProfile` vagy `loading` ténylegesen változik.
+- **Status:** Android Build (V9/1.0.13) folyamatban, iOS Clean Build ajánlott.
+
+### 🔎 V12 (V-SIMPLE-HEADER) - 2025-12-10
+- **Hypothesis:** A felhasználó szerint a hiba akkor kezdődött, amikor bevezettük a "Behajtani tilos" / "Nyíl" ikonokat a LocationScreen fejlécébe. A feltételes renderelés (Conditional Rendering) okozhat DOM instabilitást vagy Layout Thrashing-et, ami újramountolást triggerelhet.
+- **Action:** Ikonok kikommentálva a `LocationScreen.tsx`-ben. Visszatérés az egyszerű szöveges fejléchez.
+- **Status:** Android Build (V8/1.0.12) folyamatban, iOS Clean Build ajánlott.
+
+### 🧠 V11 (V-MEMO-FIX) - 2025-12-10
+- **ROOT CAUSE FOUND:** A "Check-In" -> "Eltűnés" hiba oka a React komponens életciklusban volt.
+  - Folyamat: User Check-In -> Firestore Validál -> `userProfile` frissül -> `DashboardScreen` újrarenderelődik -> `LocationScreen` Unmount & Mount (Reset).
+  - Mivel a `LocationScreen` újramountolódott, a lokális állapotok és a folyamatok megszakadtak/resetelődtek, ami a "Beállok" gomb újbóli megjelenését és a felhasználó "eltűnését" okozta a képernyőről.
+- **FIX:** Memoizáció (`useMemo`) bevezetése a `DashboardScreen`-ben. A tabok tartalma (`LocationScreen`-ek) most már el van szigetelve a `userProfile` változásaitól. Csak akkor renderelődnek újra, ha a `activeTab` változik.
+- **Status:** Android Build (V7/1.0.11) folyamatban, iOS Clean Build ajánlott.
+
+### 🛠️ Safe Mode & Stabilization (V9 - V-NO-TRACKING) - 2025-12-10
+- **CRITICAL FIX:** Teljesen letiltottuk a háttérszolgáltatást (`LocationTrackingService`) és az automatikus kijelentkeztetési logikát.
+- **Cél:** Megakadályozni, hogy a háttérben futó instabil GPS vagy agresszív logika "sunyi módon" kidobja a felhasználót a sorból.
+- **Változások:**
+  - `LocationTrackingService.ts`: `handleAutoCheckout` logika kikommentálva (biztonsági okokból).
+  - `DashboardScreen.tsx`: `startLocationTracking` és `updateDriverActivity` hívások eltávolítva.
+  - `LocationScreen.tsx`: Verziójelzés: `VERZIÓ: V-NO-TRACKING`.
+- **Status:** Felhasználó terepen teszteli iOS-en (Xcode build).
 
 ### 1. Környezet előkészítés
 - ✅ Node.js telepítve
@@ -230,6 +312,15 @@ export interface LocationData {
 - Realtime Firestore listener
 - Flame gomb (visszavétel)
 - Food/Phone gomb (emoji hozzáadás)
+- [x] ProfileScreen: Fixed crash when modifying category (LocationService update)
+- [x] Geofencing: Implemented "Undo" disable logic on geofence violation (undoService.clear)
+- [x] Info.plist: Updated Display Name to "Elitdroszt"
+- [x] App.json: Added iOS background location configuration
+- [x] Permissions: Hardened mock location check (skip for admins)
+- [x] iOS Profil Picker cseréje stabil ActionSheet/Modal megoldásra (DashboardScreen)
+- [x] Sötét mód (Dark Mode) támogatás implementálása a Login és Register oldalakon
+- [x] 213-as oldal jogosultsági hiba javítása: csak admin mozgathat/szerkeszthet, törlés minden jogosultnak engedélyezve
+- [x] GoogleService-Info.plist frissítése új Bundle ID-hoz (com.oliwerhun.elitdroszt)
 
 ### 16. Location Service
 **Fájl:** `src/services/LocationService.ts`
@@ -798,962 +889,809 @@ Ha Expo problémák vannak:
 ## ✨ FRISSÍTÉS - 2025-11-22 19:25
 
 ### LoginScreen.tsx újabb finomítás
-✅ **Elfelejtett jelszó Modal dialog hozzáadva:**
-- Szép Modal popup megjelenés
-- Email input mező a Modalban
-- Mégse / Küldés gombok
-- Pre-fill email a login mezőből
-- Loading state a Modal-ban is
-- Teljes validáció és error handling
-
-**ÁLLAPOT:** 
-- ✅ AUTH FLOW 100% KÉSZ
-- ✅ Login, Register, Pending, Password Reset MŰKÖDIK
-- ✅ Kijelentkezés működik
-- ✅ Firebase integráció teljes
-
-**KÖVETKEZŐ NAGY LÉPÉS:** 
-Dashboard Screen fejlesztés (Tab Navigation - 7 taxiállomás + admin)
 
 ---
 
-## 📊 TELJES PROJEKT STÁTUSZ (MOST)
+## 🆕 FRISSÍTÉS - 2025-12-02 23:20
 
-**Kész komponensek:**
-- ✅ Firebase config
-- ✅ AuthContext (user state management)
-- ✅ TypeScript types
-- ✅ LoginScreen (+ Modal password reset)
-- ✅ RegisterScreen (URH szám)
-- ✅ PendingApprovalScreen
-- ✅ AppNavigator (conditional routing)
-- ✅ App.tsx (wrapper)
+### 1. PermissionGuard Javítás
+✅ `src/components/PermissionGuard.tsx` módosítva:
+- Helymeghatározás gomb mostantól először megpróbálja közvetlenül kérni az engedélyt (`requestBackgroundPermissionsAsync`).
+- Csak sikertelen kérés esetén küldi a felhasználót a beállításokba.
+- Ez megoldja a problémát, hogy a gomb nem a megfelelő helyre vitte a felhasználót.
 
-**Hátralevő fő feladatok:**
-1. Dashboard Screen (Tab Navigation)
-2. Location Screens (7 taxiállomás)
-3. Check-in/Check-out gombok
-4. Firestore realtime listeners
-5. GPS + Geofencing
-6. Admin Panel
-7. Map Screen
-8. Címkiosztó
+### 2. 30 perces aktivitás figyelés
+✅ `src/services/LocationTrackingService.ts` módosítva:
+- Új funkció: `checkDriverActivity`
+- 30 perc inaktivitás után értesítést küld ("Még dolgozol?").
+- Az értesítésre kattintva (vagy az app megnyitásakor) a számláló újraindul.
 
-**BECSÜLT HÁTRALEVŐ IDŐ:** ~12-15 óra fejlesztés
+✅ `src/screens/driver/DashboardScreen.tsx` módosítva:
+- AppState listener hozzáadva.
+- Amikor az app előtérbe kerül (active), frissíti az utolsó aktivitás időbélyegét.
+- Ez biztosítja, hogy amíg a sofőr használja az appot, nem kap felesleges értesítéseket.
+
+**STÁTUSZ:** Háttérfolyamatok és engedélykezelés javítva.
 
 ---
 
-🎉 **NAGY SIKER: AUTH RENDSZER TELJES ÉS MŰKÖDIK!** 🎉
+## 🎨 FRISSÍTÉS - 2025-12-06 10:00
+
+### PermissionGuard Wizard ("Varázsló") Átalakítás
+✅ `src/components/PermissionGuard.tsx` teljesen átírva (v4):
+- **4 lépéses varázsló:** Intro (Helyzet) -> Értesítések -> Nem használt appok (Unused) -> Akkumulátor + Tippek.
+- **Szövegezés:** Egyszerűsített, lényegre törő utasítások nagy betűkkel ("Kérlek állítsd Mindig értékre").
+- **Helyimitálás (Mock Location):** Kikerült a varázslóból. Mostantól a háttérben figyel, és ha észleli, egy **blokkoló piros képernyőt** dob fel ("HELYIMITÁLÁS ÉSZLELVE!"), amíg ki nem kapcsolják.
+- **Navigáció:** A gombok közvetlenül a megfelelő beállításokhoz visznek.
+
+### Egyéb javítások
+### Gyártó-specifikus javítások és iOS Optimalizálás
+✅ `src/components/PermissionGuard.tsx` frissítve:
+- **iOS Specifikus logika:**
+  - Helyimitálás (Mock Location) ellenőrzés kihagyva (iOS-en nem releváns).
+  - Varázsló lerövidítve: Csak Helyzet és Értesítés kérése (Akkumulátor/Unused apps lépések kihagyva).
+- **Android logika:** Változatlan maradt (4 lépés + Mock ellenőrzés).
+
+### Hibajavítások
+✅ `react-native-reanimated` verzió konfliktus javítása (`WorkletsError`).
+- Csomag újratelepítve az Expo SDK 54 kompatibilis verzióra.
+- Cache tisztítás és újraépítés szükséges lehet.
+
+### ⚠️ Probléma: iOS Szimulátor hiánya
+A rendszer ellenőrzése során kiderült, hogy a teljes **Xcode** alkalmazás nincs telepítve a gépre (csak a parancssori eszközök), ezért az iOS Szimulátor nem indítható el.
+- **Megoldás:** Az Xcode telepítése az App Store-ból kötelező az iOS fejlesztéshez és emuláláshoz.
 
 ---
 
-## ✨ FRISSÍTÉS - 2025-11-22 19:35
+## ✅ FRISSÍTÉS - 2025-12-06 15:47
 
-### RegisterScreen.tsx finomítás
-✅ **Picker javítva "Válassz..." placeholder-rel:**
-- Alapértelmezett érték: "Válassz..." (szürke, nem választható)
-- Lista legördül, de a placeholder nem választható ki
-- Validáció: kötelező választani kategóriát
-- onValueChange csak valós értéket fogad el
+### iOS Szimulátor Sikeres Elindítása 🎉
 
-**TELJES AUTH RENDSZER MOST MÁR TÖKÉLETES!** ✅
+**Státusz:** Az iOS alkalmazás sikeresen fut az iPhone 16 Plus szimulátorban!
 
----
+#### Elvégzett lépések:
 
-## 🎯 KÖVETKEZŐ: DASHBOARD FEJLESZTÉS
+1. **Xcode ellenőrzés:**
+   - ✅ Xcode telepítve: `/Applications/Xcode.app/Contents/Developer`
+   - ✅ Elérhető szimulátorok: iPhone 16 Plus (iOS 18.6) - Booted
 
-Készen állsz a Dashboard Screen-re (Tab Navigation)?
+2. **CocoaPods telepítés:**
+   ```bash
+   cd ios && pod install && cd ..
+   ```
+   - ✅ 90 függőség telepítve
+   - ✅ React Native 0.81.5 konfigurálva
+   - ✅ Expo autolinking működik
 
----
+3. **Development Build indítás:**
+   ```bash
+   npx expo start --ios
+   # Metro terminálban: 's' (switch to dev-client)
+   # Majd: 'i' (open iOS simulator)
+   ```
+   - ✅ Metro Bundler elindult (http://localhost:8081)
+   - ✅ Bundle létrehozva: 899ms (1375 modul)
+   - ✅ App megnyílt: `com.oliwerhun.drosztokmobile`
+   - ✅ AuthContext működik, Login screen betöltődött
 
-## 🆕 FRISSÍTÉS - 2025-11-22 20:30
+#### Fontos megjegyzések:
 
-### 14. Dashboard Screen - KÉSZ ✅
-✅ **`src/screens/driver/DashboardScreen.tsx` létrehozva**
+- **Expo Go vs Development Build:** Az alkalmazás túl komplex az Expo Go-hoz (natív modulok: location, notifications, stb.), ezért **Development Build** módot kell használni.
+- **Worklets hiba:** A `react-native-reanimated` worklets verzió eltérés csak Expo Go-ban jelenik meg, Development Build-ben nincs probléma.
+- **iOS vs Android:** Az iOS szimulátor most már működik, ugyanúgy mint az Android emulátor.
 
-**Funkciók:**
-- ✅ Bottom Tab Navigation (7 fő taxiállomás)
-  - Akadémia, Belváros, Budai, Conti, Crowne, Kozmo, Reptér
-- ✅ V-Osztály tab (dinamikus - ha V-Osztály típus VAGY admin)
-- ✅ 213-as tab (dinamikus - ha VIP/VIP Kombi VAGY admin VAGY canSee213)
-- ✅ Admin tabok (dinamikus - csak admin):
-  - Térkép
-  - Admin
-  - Címkiosztó
-- ✅ Profil tab (mindenki)
-  - Felhasználói adatok megjelenítése
-  - Kijelentkezés gomb
-- ✅ Placeholder screen-ek minden tabhoz ("Hamarosan...")
+#### iOS Szimulátor Indítási Parancsok:
 
-**AppNavigator.tsx frissítve:**
-- ✅ DashboardScreen integráció
-- ✅ DashboardPlaceholder eltávolítva
-- ✅ Teljes auth flow működik (Login → Register → Pending → Dashboard)
+```bash
+# 1. Szimulátor ellenőrzés (opcionális)
+xcrun simctl list devices | grep Booted
 
-**TESZTELVE ÉS MŰKÖDIK:** ✅
-- Dashboard betöltődik 7 tab-bal
-- Dinamikus tabok megjelennek jogosultság szerint
-- Tab váltás működik
-- Profil megjeleníti az adatokat
-- Kijelentkezés működik
+# 2. Metro Bundler + iOS indítás
+cd ~/drosztok-mobile
+npx expo start --ios
 
----
+# 3. Metro terminálban:
+# - Nyomj 's' betűt → Development Build mód
+# - Nyomj 'i' betűt → iOS szimulátor megnyitása
 
-## 📊 FRISSÍTETT PROJEKT STÁTUSZ
-
-**Befejezett:** 55% (+10%)  
-**Aktuális fázis:** Dashboard szerkezet kész, Location Screens következik  
-**Következő:** Location Screen fejlesztés (Check-in/Check-out, Members lista)
-
-**Kész komponensek:**
-- ✅ Firebase config
-- ✅ AuthContext
-- ✅ TypeScript types
-- ✅ LoginScreen (Modal password reset)
-- ✅ RegisterScreen (URH szám)
-- ✅ PendingApprovalScreen
-- ✅ AppNavigator
-- ✅ App.tsx
-- ✅ **DashboardScreen (Tab Navigation)** 🆕
-
-**Hátralevő főbb feladatok:**
-1. ⏳ Location Screen (Akadémia, Belváros, stb.) - KÖVETKEZŐ
-2. ⏳ Check-in/Check-out gombok + Firestore integráció
-3. ⏳ Members lista realtime Firestore listener
-4. ⏳ Flame gomb (visszavétel előző pozícióra)
-5. ⏳ Food/Phone gomb (emoji hozzáadás)
-6. ⏳ GPS + Geofencing (auto check-out)
-7. ⏳ V-Osztály sub-tabok (Sor + Rendelések)
-8. ⏳ Reptér sub-tabok (Reptér + Rendelések + Emirates)
-9. ⏳ 213-as rendelések lista
-10. ⏳ Admin Panel (User management)
-11. ⏳ Térkép (Sofőrök pozíciói)
-12. ⏳ Címkiosztó (Admin funkció)
-
-**BECSÜLT HÁTRALEVŐ IDŐ:** ~10-12 óra fejlesztés
-
----
-
-## 🎯 KÖVETKEZŐ LÉPÉS: Location Screen Template
-
-**Fájl:** `src/screens/driver/LocationScreen.tsx`
-
-**Tervezett funkciók:**
-- Check-in / Check-out gombok
-- Members lista megjelenítés
-- Realtime Firestore listener
-- Flame gomb (visszavétel)
-- Food/Phone gomb (🍔📞 emoji)
-- Geofence státusz megjelenítés
-- Loading states
-- Error handling
-
-Ez lesz a **sablon** mind a 7 taxiállomáshoz!
-
----
-
-🎉 **NAGY ELŐRELÉPÉS: DASHBOARD NAVIGÁCIÓ KÉSZ!** 🎉
-
-
----
-
-## 🆕 FRISSÍTÉS - 2025-11-22 21:00
-
-### 15. LocationScreen - KÉSZ ✅
-✅ **`src/screens/driver/LocationScreen.tsx` létrehozva**
-
-**Funkciók:**
-- ✅ Check-in / Check-out gombok
-- ✅ Members lista megjelenítés
-- ✅ Realtime Firestore listener (onSnapshot)
-- ✅ Firestore document létrehozás (setDoc + updateDoc)
-- ✅ User pozíció megjelenítés sorrendben
-- ✅ "Te" badge saját pozícióhoz
-- ✅ Loading state
-- ✅ Empty state ("Nincs itt senki")
-- ✅ DisplayName generálás userType alapján:
-  - Taxi: `001S - ABC123`
-  - Kombi Taxi: `001SK - ABC123`
-  - V-Osztály: `001V - ABC123`
-  - VIP: `001 - ABC123`
-  - VIP Kombi: `001K - ABC123`
-- ✅ Disabled state gombokon (Check-in ha bent van, Check-out ha kint van)
-
-**DashboardScreen.tsx frissítve:**
-- ✅ LocationScreen integráció mind a 7 taxiállomásra
-- ✅ Wrapper komponensek (AkademiaScreen, BelvarosScreen, stb.)
-- ✅ locationName és locationTitle props átadás
-
-**TESZTELVE ÉS MŰKÖDIK (Emulátoron):** ✅
-- Check-in gomb → User megjelenik a listában
-- Check-out gomb → User eltűnik a listából
-- Realtime sync működik (onSnapshot listener)
-- "Te" badge megjelenik saját pozíciónál
-- Pozíció számok (1., 2., 3., stb.)
-
-**Samsung teszt:**
-- ⚠️ LAN mód connection issue (Skip - Emulátorral folytatjuk)
-
----
-
-## 📊 FRISSÍTETT PROJEKT STÁTUSZ
-
-**Befejezett:** 65% (+10%)  
-**Aktuális fázis:** LocationScreen kész, Flame + Food/Phone gombok következnek  
-**Következő:** Flame gomb (visszavétel) + Food/Phone gomb (emoji)
-
-**Kész komponensek:**
-- ✅ Firebase config
-- ✅ AuthContext
-- ✅ TypeScript types
-- ✅ LoginScreen (Modal password reset)
-- ✅ RegisterScreen (URH szám)
-- ✅ PendingApprovalScreen
-- ✅ AppNavigator
-- ✅ App.tsx
-- ✅ DashboardScreen (Tab Navigation)
-- ✅ **LocationScreen (Check-in/Check-out + Firestore)** 🆕
-
-**Hátralevő főbb feladatok:**
-1. ⏳ Flame gomb (visszavétel előző pozícióra) - KÖVETKEZŐ
-2. ⏳ Food/Phone gomb (🍔📞 emoji hozzáadás)
-3. ⏳ GPS + Geofencing (auto check-out)
-4. ⏳ V-Osztály sub-tabok (Sor + Rendelések)
-5. ⏳ Reptér sub-tabok (Reptér + Rendelések + Emirates)
-6. ⏳ 213-as rendelések lista
-7. ⏳ Admin Panel (User management)
-8. ⏳ Térkép (Sofőrök pozíciói)
-9. ⏳ Címkiosztó (Admin funkció)
-10. ⏳ Drag & drop sorrendezés (Admin - később)
-11. ⏳ Profil szerkesztés
-
-**BECSÜLT HÁTRALEVŐ IDŐ:** ~8-10 óra fejlesztés
-
----
-
-## 🎯 KÖVETKEZŐ LÉPÉS: Flame + Food/Phone gombok
-
-**Fájl:** `src/screens/driver/LocationScreen.tsx` (frissítés)
-
-**Tervezett funkciók:**
-- 🔥 **Flame gomb:**
-  - Visszavétel előző pozícióra
-  - "🔥" emoji a név előtt
-  - LastCheckedOut state kezelés
-  - Csak akkor aktív, ha 1 percen belül checkouttoltál
-  
-- 🍔📞 **Food/Phone gomb:**
-  - Toggle "🍔📞" emoji a név előtt
-  - Csak akkor aktív, ha be vagy jelentkezve
-  - Kombinálható a Flame emoji-val
-
----
-
-🎉 **NAGY ELŐRELÉPÉS: LOCATION SCREEN MŰKÖDIK!** 🎉
-
-**Firebase Collections struktúra (jelenleg):**
-```
-firestore/
-└── locations/
-    ├── Akadémia/
-    │   └── members: []
-    ├── Belváros/
-    │   └── members: []
-    ├── Budai/
-    │   └── members: []
-    ├── Conti/
-    │   └── members: []
-    ├── Crowne/
-    │   └── members: []
-    ├── Kozmo/
-    │   └── members: []
-    └── Reptér/
-        └── members: []
+# 4. Reload (ha változtatsz a kódon)
+# Metro terminálban: 'r' betű
 ```
 
-**Következő Firebase struktúra bővítés:**
-- notes: [] (Rendelések lista)
-- emiratesMembers: [] (Csak Reptér)
+#### Platform-specifikus különbségek (iOS):
 
+**PermissionGuard módosítások iOS-re:**
+- ✅ Mock Location ellenőrzés kihagyva (iOS-en nem releváns)
+- ✅ Varázsló lerövidítve: Csak Helyzet + Értesítés (Akkumulátor/Unused apps lépések kihagyva)
+- ✅ Platform.OS === 'ios' feltételek implementálva
 
----
-
-## 🆕 FRISSÍTÉS - 2025-11-22 21:30
-
-### 16. Flame gomb - KÉSZ 🔥
-✅ **LocationScreen.tsx frissítve - Flame funkcionalitás**
-
-**Funkciók:**
-- ✅ Checkout után aktív
-- ✅ Visszarakja a user-t az előző pozícióra
-- ✅ "🔥" emoji hozzáadás a név elé
-- ✅ LastCheckout state kezelés
-- ✅ Nincs időkorlát (bármikor visszavehető)
-- ✅ Disabled state ha be van jelentkezve
-- ✅ Disabled state ha másik helyen checkout-olt
-
-**Működés:**
-1. User Check-out → lastCheckout mentve (pozíció + memberData)
-2. 🔥 gomb aktív lesz
-3. 🔥 gomb kattintás → User visszakerül az előző pozícióra "🔥" emoji-val
-4. Új Check-in → lastCheckout törlődik
-
-**TESZTELVE ÉS MŰKÖDIK:** ✅
-- Check-in → Check-out → 🔥 gomb aktív
-- 🔥 kattintás → "🔥 001S - ABC123" formátum
-- Kombinálható más emoji-kkal
+**Következő lépések iOS-re:**
+- [ ] Tesztelni a PermissionGuard-ot iOS szimulátorban
+- [ ] Ellenőrizni a Location engedélyeket iOS-en
+- [ ] Tesztelni a Dashboard navigációt
+- [ ] Ellenőrizni a Firebase auth működését iOS-en
 
 ---
 
-### 17. Food/Phone gomb - KÉSZ 🍔📞
-✅ **LocationScreen.tsx frissítve - Food/Phone toggle**
+**PROJEKT STÁTUSZ FRISSÍTÉS:**
 
-**Funkciók:**
-- ✅ Toggle gomb (ki/be kapcsolás)
-- ✅ "🍔📞" emoji hozzáadás/eltávolítás
-- ✅ Csak aktív ha be van jelentkezve
-- ✅ Kombinálható 🔥 emoji-val
-- ✅ Intelligens emoji pozicionálás (🔥 után, ha van)
+**Befejezett:** 50%  
+**Aktuális fázis:** iOS + Android Development Build működik ✅  
+**Következő:** Platform-specifikus tesztelés és finomhangolás  
+**Becsült hátralevő idő:** ~12-15 óra fejlesztés  
 
-**Működés:**
-1. User be van jelentkezve → 🍔📞 gomb aktív
-2. Első kattintás → "🍔📞 001S - ABC123"
-3. Második kattintás → emoji eltűnik
-4. Ha van 🔥: "🔥 🍔📞 001S - ABC123"
-
-**TESZTELVE ÉS MŰKÖDIK:** ✅
-- Toggle működik (ki/be)
-- Kombinálható 🔥-val
-- Disabled ha nincs bejelentkezve
+**UTOLSÓ FRISSÍTÉS:** 2025-12-06 15:47  
+**STÁTUSZ:** iOS SZIMULÁTOR MŰKÖDIK ✅ - TESZTELÉS KÖVETKEZIK ⏳
 
 ---
 
-## 📊 FRISSÍTETT PROJEKT STÁTUSZ
+## 🧪 FRISSÍTÉS - 2025-12-06 15:50
 
-**Befejezett:** 75% (+10%)  
-**Aktuális fázis:** LocationScreen teljes, GPS + További tabok következnek  
-**Következő:** GPS + Geofencing (auto check-out)
+### iOS Tesztelés Megkezdése
 
-**Kész komponensek:**
-- ✅ Firebase config
-- ✅ AuthContext
-- ✅ TypeScript types
-- ✅ LoginScreen (Modal password reset)
-- ✅ RegisterScreen (URH szám)
-- ✅ PendingApprovalScreen
-- ✅ AppNavigator
-- ✅ App.tsx
-- ✅ DashboardScreen (Tab Navigation)
-- ✅ **LocationScreen (TELJES!)** 🆕
-  - ✅ Check-in / Check-out
-  - ✅ Firestore realtime sync
-  - ✅ Members lista
-  - ✅ 🔥 Flame gomb (visszavétel)
-  - ✅ 🍔📞 Food/Phone gomb (toggle)
+**Státusz:** iOS alkalmazás tesztelése folyamatban
 
-**Hátralevő főbb feladatok:**
-1. ⏳ GPS + Geofencing (auto check-out zónák alapján) - KÖVETKEZŐ
-2. ⏳ V-Osztály sub-tabok (Sor + Rendelések)
-3. ⏳ Reptér sub-tabok (Reptér + Rendelések + Emirates)
-4. ⏳ 213-as rendelések lista
-5. ⏳ Admin Panel (User management)
-6. ⏳ Térkép (Sofőrök pozíciói)
-7. ⏳ Címkiosztó (Admin funkció)
-8. ⏳ Drag & drop sorrendezés (Admin - később)
-9. ⏳ Profil szerkesztés
+#### Létrehozott dokumentációk:
 
-**BECSÜLT HÁTRALEVŐ IDŐ:** ~6-8 óra fejlesztés
+1.- [x] **APK Méret Optimalizálás (Slim Build)**
+    - Gradle Split engedélyezése: ARM64-v8a és ARMeabi-v7a külön APK-ba.
+    - Eredmény: 77 MB -> **31 MB** (ARM64).
+    - FTP feltöltési problémák megoldva.
+- [x] **V-Osztály Logika Javítása**
+    - Virtuális droszt lévén kivettük a GPS zóna ikonokat (⛔/⬆️).
+    - A "Be" gomb nem tiltódik le a zónán kívül.
+- [x] **UI Egységesítés**
+    - Subtab gombok (Reptér, V-Osztály) magasságának növelése (`paddingVertical: 12`), hogy megegyezzenek a főmenüvel.
+- [x] **PRO PermissionGuard (Ipari szintű engedélykezelés)**
+    - **Native Java Modul** (`BatteryOptimizationModule`): Közvetlen Android rendszerhívás az akkumulátor-optimalizálás ellenőrzésére.
+    - **Intelligens UI**: Egységes "Beállítások megnyitása" és "Tovább" gombok minden lépésnél.
+    - **Szigorú ellenőrzés**: A "Tovább" gomb csak akkor aktív, ha a rendszer visszaigazolja a jogosultságot.
+    - **Gyártóspecifikus segítség**: Samsung, Huawei, Xiaomi, Oppo, Sony, LG, Motorola specifikus útmutatók és rejtett menük megnyitása.
+    - **Unused Apps**: Külön lépés a jogosultság-megvonás kikapcsolására.
+    - **Anti-Cheat**: Futásidejű felügyelet (ha a sofőr elveszi a jogot, az app blokkol).
+- [x] **Korlátlan Háttérfutás ("Doze" védelem)**
+    - Akkumulátor-optimalizálás kikapcsolásának kikényszerítése.
+    - Foreground Service (Értesítés sáv) biztosítása.
+    - Inaktivitási (zaklatási) küszöb növelése 1 óráról **12 órára**.
+- [x] **Samsung A13 (és 32-bites eszközök) Támogatása**
+    - Universal APK generálásának engedélyezése (~78 MB).
+    - Split APK-k megtartása a sávszélesség-takarékosság érdekében.
+- [x] **Battery Optimization Javítás**
+    - Samsung eszközöknél a specifikus (és gyakran változó) "Device Care" intent helyett az **App Info** képernyőt nyitjuk meg (`ACTION_APPLICATION_DETAILS_SETTINGS`).
+    - Innen a felhasználó 1 kattintással eléri az Akkumulátor beállításokat, ami sokkal megbízhatóbb.
+- [x] **Profi Build Workflow**
+    - Automatikus `~/build` mappa kezelés: Minden build előtt törlés (`rm -rf`), majd tiszta generálás.
+    - Egyértelmű fájlnevek generálása (`Elitdroszt-Universal.apk`, `Elitdroszt-ARM64.apk`).
+- [x] **IOS_TEST_LOG.md** ✅
+   - Tesztelési terv (6 fő kategória)
+   - Teszt eredmények dokumentálása
+   - Hibák és problémák nyilvántartása
+   - iOS vs Android különbségek összefoglalása
 
----
+2. **IOS_MANUAL_TEST_GUIDE.md** ✅
+   - Részletes lépésről-lépésre útmutató
+   - 6 fő teszt szcenárió:
+     - Teszt #1: Regisztráció
+     - Teszt #2: Admin jóváhagyás
+     - Teszt #3: PermissionGuard (iOS-specifikus)
+     - Teszt #4: Dashboard navigáció
+     - Teszt #5: Check-in/Check-out
+     - Teszt #6: Location tracking (iOS)
+   - Teszt adatok és elvárt eredmények
+   - Lehetséges hibák és megoldások
+   - iOS-specifikus megjegyzések
 
-## 🎯 KÖVETKEZŐ LÉPÉS: GPS + Geofencing
+#### Teszt felhasználó adatok:
+```
+Email: test.ios@drosztok.hu
+URH szám: 999
+Rendszám: IOS123
+Típus: Taxi
+Jelszó: test123456
+```
 
-**Fájlok:**
-- `src/services/LocationService.ts` (új)
-- `src/services/GeofenceService.ts` (új)
-- `LocationScreen.tsx` (frissítés - GPS integráció)
+#### Tesztelési fókusz (iOS-specifikus):
 
-**Tervezett funkciók:**
-- 📍 GPS tracking (expo-location)
-- 🗺️ Geofence polygon koordináták (7 taxiállomás)
-- 🚫 Auto check-out ha elhagyja a zónát
-- ✅ Geofence státusz megjelenítés
-- 🔔 Background location tracking (később)
+**PermissionGuard különbségek:**
+- ✅ 2 lépéses varázsló (vs Android 4 lépés)
+- ✅ Helyzet + Értesítés engedélyek
+- ✅ NINCS Mock Location ellenőrzés
+- ✅ NINCS Unused Apps lépés
+- ✅ NINCS Akkumulátor optimalizálás lépés
 
-**Geofence zónák (polygon koordináták):**
-```javascript
-const geofencedLocations = {
-  'Akadémia': { polygon: [...] },
-  'Belváros': { polygon: [...] },
-  'Conti': { polygon: [...] },
-  'Budai': { polygon: [...] },
-  'Crowne': { polygon: [...] },
-  'Kozmo': { polygon: [...] },
-  'Reptér': { polygon: [...] }
-};
+**Location Permissions iOS-en:**
+- "While Using App" - Előtérben működik
+- "Always" - Háttérben is működik (szükséges!)
+- Első kéréskor csak "While Using" választható
+- "Always" később, használat közben kérhető
+
+**Notification Permissions iOS-en:**
+- Egyszer kérhető
+- Ha elutasítva, csak Settings-ben változtatható
+- Natív iOS dialógus
+
+#### Következő lépések:
+
+1. **Manuális tesztelés:**
+   - [ ] Kövesd az `IOS_MANUAL_TEST_GUIDE.md` útmutatót
+   - [ ] Dokumentáld az eredményeket az `IOS_TEST_LOG.md`-ben
+   - [ ] Készíts screenshot-okat ha szükséges
+
+2. **Hibák javítása:**
+   - [ ] Ha iOS-specifikus hibát találsz, dokumentáld
+   - [ ] Javítsd a kódot
+   - [ ] Teszteld újra
+
+3. **Platform összehasonlítás:**
+   - [ ] Teszteld ugyanazt Android emulátorban
+   - [ ] Hasonlítsd össze a működést
+   - [ ] Dokumentáld a különbségeket
+
+#### Hasznos parancsok iOS teszteléshez:
+
+```bash
+# iOS szimulátor újraindítása
+xcrun simctl shutdown all
+xcrun simctl boot "iPhone 16 Plus"
+
+# App újratöltése
+# iOS szimulátorban: Cmd+R
+# Metro terminálban: 'r'
+
+# Logok megtekintése
+# Metro terminálban láthatók automatikusan
+
+# Szimulátor location beállítása
+# Features → Location → Custom Location
+# Vagy: Features → Location → Apple
 ```
 
 ---
 
-🎉 **NAGY SIKER: LOCATIONSCREEN 100% KÉSZ!** 🎉
+**PROJEKT STÁTUSZ FRISSÍTÉS:**
 
-**LocationScreen funkciók összefoglalás:**
-- ✅ Realtime Firestore sync
-- ✅ Check-in / Check-out
-- ✅ Members lista pozíciókkal
-- ✅ "Te" badge
-- ✅ 🔥 Flame gomb (visszavétel)
-- ✅ 🍔📞 Food/Phone gomb (toggle)
-- ✅ Loading states
-- ✅ Error handling
-- ✅ Responsive design
+**Befejezett:** 52%  
+**Aktuális fázis:** iOS Tesztelés folyamatban 🧪  
+**Következő:** Hibák javítása és platform-specifikus finomhangolás  
+**Becsült hátralevő idő:** ~10-12 óra fejlesztés  
 
-**Következő alkalom:** GPS + Geofencing implementáció
-
+**UTOLSÓ FRISSÍTÉS:** 2025-12-06 15:50  
+**STÁTUSZ:** iOS TESZTELÉS FOLYAMATBAN 🧪 - DOKUMENTÁCIÓ KÉSZ ✅
 
 ---
 
-## 🆕 FRISSÍTÉS - 2025-11-22 22:00
+## 🐛 FRISSÍTÉS - 2025-12-06 17:02
 
-### 18. GPS + Geofencing - KÉSZ 📍
-✅ **GeofenceService.ts létrehozva**
-✅ **LocationScreen.tsx frissítve GPS integrációval**
+### iOS Picker Javítás - Regisztrációs Oldal
 
-**Funkciók:**
-- ✅ GPS Toggle gomb (ON/OFF)
-- ✅ Zóna státusz megjelenítés (✅ Zónában / ❌ Kívül)
-- ✅ Location permission kezelés (expo-location)
-- ✅ Realtime GPS tracking (5 sec / 10m)
-- ✅ Point-in-Polygon algoritmus (Ray casting)
-- ✅ Auto check-out ha elhagyja a zónát
-- ✅ GPS check-in védelem (csak zónában lehet bejelentkezni)
-- ✅ GPS flame védelem (csak zónában lehet visszavenni)
-- ✅ 7 taxiállomás polygon koordináták
+**Probléma:** A kategória választó (Picker) nem működött megfelelően iOS-en a regisztrációs oldalon.
 
-**GeofenceService.ts funkciók:**
-```typescript
-- geofencedLocations: Record<string, GeofenceZone>
-- isPointInPolygon(point, polygon): boolean
-- checkUserInZones(userLocation): string | null
+**Hiba leírása:**
+- A Picker komponens nem volt látható/használható iOS-en
+- Az utolsó sor (típus választó) nem működött
+
+**Javítás:**
+
+✅ `src/screens/auth/RegisterScreen.tsx` módosítva:
+
+1. **iOS-specifikus magasság:**
+   ```typescript
+   picker: {
+     height: Platform.OS === 'ios' ? 150 : 50,
+   }
+   ```
+
+2. **iOS-specifikus itemStyle:**
+   ```typescript
+   pickerItemIOS: {
+     height: 150,
+     fontSize: 18,
+   }
+   ```
+
+3. **Picker komponens egyszerűsítve:**
+   - Eltávolítva: `dropdownIconColor`, `color` prop-ok (nem működnek iOS-en)
+   - Hozzáadva: `itemStyle={Platform.OS === 'ios' ? styles.pickerItemIOS : undefined}`
+   - Picker.Item-ekből eltávolítva a `color` prop
+
+**Eredmény:**
+- ✅ iOS-en a Picker most 150px magas (jól látható)
+- ✅ Android-on továbbra is 50px (kompakt)
+- ✅ iOS-en a picker item-ek nagyobb betűmérettel (18px)
+- ✅ Mindkét platformon működik
+
+**Tesztelés:**
+- ✅ App reload-olva iOS szimulátorban (`r` a Metro terminálban)
+- ✅ AuthContext működik
+- ✅ Background location tracking működik
+- ⏳ Regisztráció tesztelése következik
+
+**Következő lépés:** Folytasd a regisztrációs tesztet az iOS szimulátorban!
+
+---
+
+## 🎨 FRISSÍTÉS - 2025-12-06 17:06
+
+### iOS Picker UI Javítás - Kompakt Megjelenés
+
+**Probléma:** A Picker 3 sorban mutatta az elemeket (wheel stílus), nem volt kompakt és iOS-szerű.
+
+**Felhasználói igény:**
+- Csak 1 sor legyen (kompakt gomb)
+- Lenyíló, görgethető menü
+- "Válassz típust..." ne legyen kiválasztható
+- Ha rákattint valaki, bezáródjon a menü
+
+**Megoldás: TouchableOpacity + Modal**
+
+✅ `src/screens/auth/RegisterScreen.tsx` teljesen átírva:
+
+1. **Kompakt gomb a Picker helyett:**
+   ```typescript
+   <TouchableOpacity
+     style={styles.pickerButton}
+     onPress={() => setShowPicker(true)}
+   >
+     <Text>{userType || 'Válassz típust...'}</Text>
+     <Ionicons name="chevron-down" size={20} />
+   </TouchableOpacity>
+   ```
+
+2. **Modal a típus választáshoz:**
+   ```typescript
+   <Modal visible={showPicker} animationType="slide">
+     <View style={styles.pickerModalContent}>
+       <TouchableOpacity onPress={() => setShowPicker(false)}>
+         <Text>Kész</Text>
+       </TouchableOpacity>
+       <Picker>
+         {/* Csak a választható típusok, NINCS "Válassz típust..." */}
+         <Picker.Item label="Taxi" value="Taxi" />
+         <Picker.Item label="Kombi Taxi" value="Kombi Taxi" />
+         ...
+       </Picker>
+     </View>
+   </Modal>
+   ```
+
+3. **Új style-ok:**
+   - `pickerButton` - Kompakt gomb (1 sor, fehér háttér, border)
+   - `pickerButtonText` - Szöveg stílus
+   - `pickerPlaceholderText` - Placeholder szín (szürke)
+   - `modalOverlay` - Félátlátszó háttér
+   - `pickerModalContent` - Modal tartalom (alulról csúszik fel)
+   - `pickerHeader` - "Kész" gomb header
+   - `pickerDoneButton` - "Kész" gomb stílus
+   - `picker` - 200px magas iOS-en (görgethető)
+
+**Eredmény:**
+- ✅ Kompakt 1 soros gomb (mint egy input mező)
+- ✅ Kattintásra alulról felcsúszik a modal
+- ✅ Modal-ban görgethető picker (200px magas)
+- ✅ "Válassz típust..." NINCS a picker-ben (nem választható)
+- ✅ "Kész" gomb bezárja a modal-t
+- ✅ iOS-szerű UX (natív feeling)
+
+**Tesztelés:**
+- ✅ App reload-olva iOS szimulátorban
+- ⏳ UI tesztelés következik
+
+**Következő lépés:** Ellenőrizd az iOS szimulátorban, hogy jó-e a kinézet!
+
+---
+
+## 🎯 FRISSÍTÉS - 2025-12-06 17:12
+
+### iOS ActionSheet Megoldás - Natív iOS UX ⭐
+
+**Felhasználói igény:** ActionSheet (natív iOS lista, görgethető, alulról felcsúszik)
+
+**Megoldás: ActionSheetIOS API**
+
+✅ `src/screens/auth/RegisterScreen.tsx` módosítva:
+
+1. **ActionSheetIOS import:**
+   ```typescript
+   import { ActionSheetIOS } from 'react-native';
+   ```
+
+2. **handleTypeSelection függvény:**
+   ```typescript
+   const handleTypeSelection = () => {
+     if (Platform.OS === 'ios') {
+       // iOS natív ActionSheet
+       const options = ['Mégse', 'Taxi', 'Kombi Taxi', 'VIP', 'VIP Kombi', 'V-Osztály'];
+       ActionSheetIOS.showActionSheetWithOptions(
+         {
+           options,
+           cancelButtonIndex: 0,
+           title: 'Válassz típust',
+         },
+         (buttonIndex) => {
+           if (buttonIndex !== 0) {
+             setUserType(options[buttonIndex]);
+           }
+         }
+       );
+     } else {
+       // Android - inline dropdown
+       setShowPicker(true);
+     }
+   };
+   ```
+
+3. **Picker gomb:**
+   ```typescript
+   <TouchableOpacity onPress={handleTypeSelection}>
+     <Text>{userType || 'Válassz típust...'}</Text>
+     <Ionicons name="chevron-down" />
+   </TouchableOpacity>
+   ```
+
+**Eredmény:**
+
+**iOS:**
+- ✅ Natív ActionSheet (alulról felcsúszik)
+- ✅ "Válassz típust" cím
+- ✅ Görgethető lista
+- ✅ "Mégse" gomb (cancelButtonIndex: 0)
+- ✅ 100% natív iOS feeling
+
+**Android:**
+- ✅ Inline dropdown (a gomb alatt nyílik ki)
+- ✅ Görgethető lista
+- ✅ Checkmark a kiválasztott elemnél
+
+**Tesztelés:**
+- ✅ App reload-olva iOS szimulátorban
+- ✅ Nincs syntax error
+- ⏳ ActionSheet tesztelése következik
+
+**Következő lépés:** Próbáld ki az iOS szimulátorban! Kattints a "Válassz típust..." gombra és nézd meg az ActionSheet-et!
+
+---
+
+## 🔧 FRISSÍTÉS - 2025-12-06 17:32
+
+### PermissionGuard Javítás - Engedélyek Mentése
+
+**Probléma:** Android-on minden alkalommal megjelent a PermissionGuard wizard, amikor újra megnyitották az appot, pedig az engedélyek már meg voltak adva.
+
+**Hiba leírása:**
+- A `checkPermissions` függvény mindig ellenőrizte az engedélyeket
+- Ha valamelyik hiányzott, megnyitotta a modal-t
+- Nem volt mentve, hogy a felhasználó már egyszer végigment a wizard-on
+- Így minden app megnyitáskor újra meg kellett várni az engedélyek ellenőrzését
+
+**Megoldás: AsyncStorage perzisztencia**
+
+✅ `src/components/PermissionGuard.tsx` módosítva:
+
+1. **Új AsyncStorage kulcs:**
+   ```typescript
+   const PERMISSIONS_COMPLETED_KEY = 'permissions_completed_v1';
+   ```
+
+2. **Új state:**
+   ```typescript
+   const [permissionsCompleted, setPermissionsCompleted] = useState(false);
+   ```
+
+3. **Betöltés AsyncStorage-ból:**
+   ```typescript
+   const loadSettings = async () => {
+     const completed = await AsyncStorage.getItem(PERMISSIONS_COMPLETED_KEY);
+     if (completed === 'true') setPermissionsCompleted(true);
+   };
+   ```
+
+4. **Mentés wizard befejezésekor:**
+   ```typescript
+   // iOS-en notification után
+   if (Platform.OS === 'ios') {
+     setPermissionsCompleted(true);
+     AsyncStorage.setItem(PERMISSIONS_COMPLETED_KEY, 'true');
+   }
+   
+   // Android-on battery lépés után
+   else if (currentStep === 'battery') {
+     setPermissionsCompleted(true);
+     AsyncStorage.setItem(PERMISSIONS_COMPLETED_KEY, 'true');
+   }
+   ```
+
+5. **Okos modal megjelenítés:**
+   ```typescript
+   // Csak akkor nyitjuk meg a modal-t, ha:
+   // - Még nem ment végig a wizard-on (permissionsCompleted === false)
+   // - VAGY végigment, de visszavonta az engedélyeket
+   if (!showModal && (!permissionsCompleted || 
+       (permissionsCompleted && (bgStatus !== 'granted' || notifStatus !== 'granted')))) {
+     setShowModal(true);
+   }
+   ```
+
+**Eredmény:**
+
+**Első megnyitás:**
+- ✅ PermissionGuard wizard megjelenik
+- ✅ Felhasználó végigmegy a lépéseken
+- ✅ `permissions_completed_v1` = `true` mentve AsyncStorage-ba
+
+**Második és további megnyitások:**
+- ✅ AsyncStorage betöltve: `permissionsCompleted = true`
+- ✅ Engedélyek ellenőrzése: `bgStatus === 'granted' && notifStatus === 'granted'`
+- ✅ **Modal NEM jelenik meg** ✅
+- ✅ Azonnal belép a Dashboard-ra
+
+**Ha visszavonják az engedélyeket:**
+- ✅ `permissionsCompleted = true` (már egyszer végigment)
+- ✅ DE `bgStatus !== 'granted'` vagy `notifStatus !== 'granted'`
+- ✅ Modal megjelenik újra (engedélyek visszaállítása szükséges)
+
+**Tesztelés:**
+- ✅ App reload-olva Android-on
+- ⏳ Tesztelés következik: Zárd be és nyisd meg újra az appot
+
+
+**Következő lépés:** Próbáld ki Android-on! Zárd be az appot, majd nyisd meg újra. Most már NEM kell megjelennie a PermissionGuard-nak!
+
+---
+
+## 🎨 FRISSÍTÉS - 2025-12-06 19:40
+
+### App Ikon és Név Módosítás
+
+**Változtatások:**
+
+1. ✅ **App ikon frissítve:**
+   - Régi ikon: Nagyobb méretű logo, kilógott a keretből
+   - Új ikon: ELIT TAXI logo (piros pajzs, csillagokkal, ezüst keret)
+   - Fájlok frissítve:
+     - `assets/icon.png`
+     - `assets/adaptive-icon.png`
+     - `assets/splash-icon.png`
+   - Az új ikon megfelelő méretű, nem lóg ki az Android adaptive icon keretből
+
+2. ✅ **App név módosítva "Elitdroszt"-re:**
+   - `app.json`: `name: "Elitdroszt"`, `slug: "elitdroszt"`
+   - `android/app/src/main/res/values/strings.xml`: `app_name: "Elitdroszt"`
+   - `ios/drosztokmobile/Info.plist`: `CFBundleDisplayName: "Elitdroszt"`
+   - Ez a név jelenik meg a telepített app ikonján (Android és iOS)
+
+**Visszaállítási információk (ha szükséges):**
+- Eredeti app név: "drosztok-mobile"
+- Eredeti ikon: Git history-ban elérhető (`git restore assets/icon.png`)
+- Parancs a visszaállításhoz:
+  ```bash
+  git restore assets/icon.png assets/adaptive-icon.png assets/splash-icon.png
+  git restore app.json
+  git restore android/app/src/main/res/values/strings.xml
+  git restore ios/drosztokmobile/Info.plist
+  ```
+
+**Következő lépések:**
+- ✅ **FINAL APK sikeresen generálva!** 🎉
+- ✅ **Fájl:** `~/Desktop/Elitdroszt-FINAL-20251206-2018.apk`
+- ✅ Méret: **77 MB**
+- ✅ Build idő: 44 másodperc (gyorsabb, mert cache-elt)
+- ✅ **JAVÍTÁS:** `app.json` visszaállítva az eredeti egyszerű verzióra
+  - Csak a `name` és `slug` mezők változtak
+  - Többi konfiguráció maradt az eredeti
+- ⏳ Telepítsd az APK-t Android eszközre és ellenőrizd:
+  - Az új "Elitdroszt" név megjelenik-e
+  - Az új ELIT TAXI ikon megfelelően jelenik-e meg (nem lóg ki)
+  - Feltöltés tárhelyre - most már NEM írja felül önmagát
+
+**APK telepítése:**
+```bash
+# USB-n keresztül csatlakoztatott eszközre:
+adb install ~/Desktop/Elitdroszt-FINAL-20251206-2018.apk
+
+# Vagy másold át az APK-t az eszközre és telepítsd manuálisan
 ```
 
-**Geofence zónák:**
-- Akadémia (9 pont polygon)
-- Belváros (9 pont polygon)
-- Conti (11 pont polygon)
-- Budai (19 pont polygon)
-- Crowne (7 pont polygon)
-- Kozmo (8 pont polygon)
-- Reptér (8 pont polygon)
-
-**GPS Toggle működés:**
-1. GPS OFF → Tesztelési mód (nincs geofence ellenőrzés)
-2. GPS ON → Permission kérés
-3. GPS ON → Folyamatos tracking (5 sec intervallum)
-4. Ha KÍVÜL → Check-in blokkolva
-5. Ha BELÜL → Check-in engedélyezve
-6. Ha BELÜL van ÉS KILÉP → Auto check-out
-
-**TESZTELVE ÉS MŰKÖDIK:** ✅
-- GPS Toggle gomb működik
-- Zóna státusz frissül
-- GPS OFF mód → Minden működik (teszt)
-- GPS ON mód → Permission engedélyezés
-- Check-in blokkolva ha kívül van
-
----
-
-## 📊 FRISSÍTETT PROJEKT STÁTUSZ
-
-**Befejezett:** 80% (+5%)  
-**Aktuális fázis:** GPS kész, További tabok (V-Osztály, 213, Reptér) következnek  
-**Következő:** V-Osztály screen (Sub-tabok: Sor + Rendelések)
-
-**Kész komponensek:**
-- ✅ Firebase config
-- ✅ AuthContext
-- ✅ TypeScript types
-- ✅ LoginScreen (Modal password reset)
-- ✅ RegisterScreen (URH szám)
-- ✅ PendingApprovalScreen
-- ✅ AppNavigator
-- ✅ App.tsx
-- ✅ DashboardScreen (Tab Navigation)
-- ✅ **LocationScreen (TELJES + GPS!)** 🆕
-  - ✅ Check-in / Check-out
-  - ✅ Firestore realtime sync
-  - ✅ Members lista
-  - ✅ 🔥 Flame gomb
-  - ✅ 🍔📞 Food/Phone gomb
-  - ✅ 📍 GPS + Geofencing
-- ✅ **GeofenceService** 🆕
-
-**Hátralevő főbb feladatok:**
-1. ⏳ V-Osztály sub-tabok (Sor + Rendelések) - KÖVETKEZŐ
-2. ⏳ Reptér sub-tabok (Reptér + Rendelések + Emirates)
-3. ⏳ 213-as rendelések lista
-4. ⏳ Admin Panel (User management)
-5. ⏳ Térkép (Sofőrök pozíciói)
-6. ⏳ Címkiosztó (Admin funkció)
-7. ⏳ Drag & drop sorrendezés (Admin - később)
-8. ⏳ Profil szerkesztés
-9. ⏳ Background location tracking (később)
-
-**BECSÜLT HÁTRALEVŐ IDŐ:** ~5-6 óra fejlesztés
-
----
-
-## 🎯 KÖVETKEZŐ LÉPÉS: V-Osztály Screen
-
-**Fájl:** `src/screens/driver/VClassScreen.tsx` (új)
-
-**Tervezett funkciók:**
-- 📑 Sub-tabok: "Sor" és "Rendelések"
-- 👥 Sor tab: LocationScreen-hez hasonló (members lista)
-- 📋 Rendelések tab: Notes lista (CRUD)
-- 🔄 Tab switcher
-- 🎨 Ugyanaz a design mint LocationScreen
-
-**Rendelések funkciók:**
-- ✏️ Note hozzáadás (csak admin)
-- 🗑️ Note törlés (mindenki - mint HTML-ben)
-- 📝 Note szerkesztés (csak admin)
-- 🔄 Realtime Firestore sync
-
----
-
-🎉 **NAGY SIKER: GPS + GEOFENCING MŰKÖDIK!** 🎉
-
-**LocationScreen funkciók teljes lista:**
-- ✅ Realtime Firestore sync
-- ✅ Check-in / Check-out
-- ✅ Members lista pozíciókkal
-- ✅ "Te" badge
-- ✅ 🔥 Flame gomb (visszavétel)
-- ✅ 🍔📞 Food/Phone gomb (toggle)
-- ✅ 📍 GPS Toggle (ON/OFF)
-- ✅ 🗺️ Geofencing (auto check-out)
-- ✅ 🚫 GPS védelem (zóna ellenőrzés)
-- ✅ Loading states
-- ✅ Error handling
-- ✅ Responsive design
-
-**Következő alkalom:** V-Osztály Screen + Sub-tabok
-
-
----
-
-## 🆕 FRISSÍTÉS - 2025-11-22 23:00
-
-### 19. Top Scroll Tab Navigation - KÉSZ 📱
-✅ **DashboardScreen.tsx teljes átírás - Bottom Tab → Top Scroll Tab**
-
-**NAGY VÁLTOZÁS:**
-- ❌ Bottom Tab Navigation (React Navigation) eltávolítva
-- ✅ Top Horizontal ScrollView Tab Bar
-- ✅ Custom Tab switcher
-- ✅ Vízszintes görgetés
-- ✅ Dinamikus tab lista (user jogosultságok alapján)
-
-**Tab Navigation működés:**
-```typescript
-- ScrollView horizontal
-- Tab gombok: Akadémia, Belváros, Budai, stb.
-- Aktív tab: Fekete háttér + fehér szöveg
-- Inaktív tab: Szürke háttér + szürke szöveg
-- Görgetés: showsHorizontalScrollIndicator={false}
+**Build parancsok (ha újra kell buildeni):**
+```bash
+cd ~/drosztok-mobile
+rm -rf android/app/build
+cd android && ./gradlew assembleRelease
+cp android/app/build/outputs/apk/release/app-release.apk ~/Desktop/Elitdroszt-FINAL-$(date +%Y%m%d-%H%M).apk
 ```
 
-**Header struktúra:**
-1. **FÖNT:** DROSZTOK cím + Szia, {username} + Kijelentkezés
-2. **ALATTA:** Horizontal scroll tab bar (kompakt)
-3. **TARTALOM:** LocationScreen vagy placeholder
-
-**Tab gombok méretezés:**
-- `paddingHorizontal: 16`
-- `paddingVertical: 6`
-- `fontSize: 14`
-- Kompakt, de jól olvasható
-
-**LocationScreen header optimalizálás:**
-- `padding: 16` (csökkentve 20-ról)
-- `paddingTop` törölve (közelebb a tab bar-hoz)
-- GPS toggle pozíció: `top: 10, left: 10`
-
-**TESZTELVE ÉS MŰKÖDIK:** ✅
-- Tab váltás működik
-- Vízszintes görgetés működik
-- Dinamikus tab lista (V-Osztály, 213, Admin tabok)
-- Header + Tab bar + Content layout
+**FONTOS VÁLTOZTATÁSOK (csak ezek):**
+1. ✅ `app.json`: `name: "Elitdroszt"`, `slug: "elitdroszt"`
+2. ✅ `android/app/src/main/res/values/strings.xml`: `app_name: "Elitdroszt"`
+3. ✅ `ios/drosztokmobile/Info.plist`: `CFBundleDisplayName: "Elitdroszt"`
+4. ✅ `assets/icon.png`, `assets/adaptive-icon.png`, `assets/splash-icon.png`: ELIT TAXI logo
 
 ---
 
-## 📊 FRISSÍTETT PROJEKT STÁTUSZ
+## ⚠️ FONTOS - APK ÚJRABUILDELÉSI PROBLÉMA
 
-**Befejezett:** 85% (+5%)  
-**Aktuális fázis:** UI optimalizálás, További screen-ek következnek  
-**Következő:** V-Osztály Screen + Sub-tabok (Sor + Rendelések)
+**Probléma:** Az APK minden build-nél más hash-t kap (timestamp, metadata változik), ezért másoláskor/feltöltéskor "felülírja önmagát".
 
-**Kész komponensek:**
-- ✅ Firebase config
-- ✅ AuthContext
-- ✅ TypeScript types
-- ✅ LoginScreen (Modal password reset)
-- ✅ RegisterScreen (URH szám)
-- ✅ PendingApprovalScreen
-- ✅ AppNavigator
-- ✅ App.tsx
-- ✅ **DashboardScreen (Top Scroll Tab Navigation!)** 🆕
-- ✅ **LocationScreen (TELJES + GPS + UI optimalizálás)** 🆕
-  - ✅ Check-in / Check-out
-  - ✅ Firestore realtime sync
-  - ✅ Members lista
-  - ✅ 🔥 Flame gomb
-  - ✅ 🍔📞 Food/Phone gomb
-  - ✅ 📍 GPS Toggle + Geofencing
-  - ✅ Kompakt header
-- ✅ GeofenceService
+**MEGOLDÁS:**
+1. ✅ **NE BUILDELD ÚJRA az APK-t!**
+2. ✅ **Használd az már elkészült fájlt:** `~/Desktop/Elitdroszt-FINAL-20251206-2018.apk`
+3. ✅ **Töltsd fel EGYSZER** a tárhelyedre
+4. ✅ Ha mégis újra kell buildeni, akkor **mindig ugyanazt a fájlt használd**
 
-**Hátralevő főbb feladatok:**
-1. ⏳ V-Osztály sub-tabok (Sor + Rendelések) - KÖVETKEZŐ
-2. ⏳ Reptér sub-tabok (Reptér + Rendelések + Emirates)
-3. ⏳ 213-as rendelések lista
-4. ⏳ Admin Panel (User management)
-5. ⏳ Térkép (Sofőrök pozíciói)
-6. ⏳ Címkiosztó (Admin funkció)
-7. ⏳ Drag & drop sorrendezés (Admin - később)
-8. ⏳ Profil szerkesztés
-9. ⏳ Background location tracking (később)
+**Alternatíva - AAB formátum (Google Play Store-hoz):**
+- ✅ AAB elkészült: `~/Desktop/Elitdroszt-v1.0.0.aab` (53 MB)
+- ✅ Kisebb méret, optimalizáltabb
+- ⚠️ Közvetlenül NEM telepíthető, csak Google Play Store-on keresztül
+- Build parancs: `cd android && ./gradlew bundleRelease`
 
-**BECSÜLT HÁTRALEVŐ IDŐ:** ~4-5 óra fejlesztés
+---
+## 🔧 HIBAELHÁRÍTÁS ÉS FIX BUILD - 2025-12-06 21:48
+
+### APK Másolási hiba javítása
+**Probléma:** A felhasználó jelezte, hogy a tárhelyre másoláskor a fájl "folyton újra akarja magát írni", mintha nem tudna befejeződni a másolás.
+
+**Megoldás:**
+1. ✅ **Teljes takarítás:** A build mappa (`android/app/build`) törlésre került a beragadt folyamatok kizárása érdekében.
+2. ✅ **Tiszta Build:** Új `assembleRelease` futtatása tiszta környezetben.
+3. ✅ **Gradle Daemon Leállítása:** A build után a `./gradlew --stop` paranccsal leállítottuk a háttérfolyamatot, ami esetleg "fogja" (lockolja) a fájlt, így mostanra az APK teljesen szabadon másolható.
+
+**Eredmény:**
+- 📦 **ÚJ, FIXÁLT APK:** `~/Desktop/Elitdroszt-FIXED-20251206-2148.apk`
+- 📏 **Méret:** 77 MB
+- 🔒 **File Lock:** Megszüntetve (Daemon leállítva)
+
+**Teendő:**
+- Ezt a fájlt (`Elitdroszt-FIXED-...apk`) próbáld meg feltölteni most. Nem okozhat gondot!
+
+### ✅ SIKERES TELEPÍTÉS - 2025-12-06 21:58
+- **Eszköz:** Fizikai Android telefon (`77536d6`)
+- **Módszer:** ADB kábelen keresztül (`adb -s 77536d6 install ...`)
+- **Eredmény:** `Success`
+- **Státusz:** Az alkalmazás elindul, az ikon és a név ("Elitdroszt") rendben van. A korábbi "csomag elemzési hiba" a hibás feltöltés miatt volt, az APK valójában tökéletes.
 
 ---
 
-## 🎯 KÖVETKEZŐ LÉPÉS: UI Finomítás + V-Osztály
+### ✅ V-OSZTÁLY JOGOSULTSÁGOK FRISSÍTÉSE - 2025-12-06 22:15
+- **Fájl:** `src/screens/driver/VClassOrdersTab.tsx`
+- **Változás:** Jogosultságok szigorítása (`isRealAdmin` változó bevezetése)
+- **Admin (`role === 'admin'`):**
+  - ✅ Új rendelés hozzáadása (`+` gomb)
+  - ✅ Szöveg szerkesztése
+  - ✅ Sorrend módosítása (Drag & Drop)
+  - ✅ Törlés
+- **User (pl. V-Osztály sofőr):**
+  - ❌ Új hozzáadása (Nem látja a gombot)
+  - ❌ Szöveg szerkesztése (Csak olvasható)
+  - ❌ Sorrend módosítása (Drag handle elrejtve)
+  - ✅ **Törlés (Megmaradt)**
 
-**Jelenlegi UI optimalizálás:**
-- Tab gombok kompaktak ✅
-- Header közelebb a tab bar-hoz ✅
-- További UI tweaks (ha kell)
-
-**Majd utána:**
-- V-Osztály Screen létrehozása
-- Sub-tabok: "Sor" és "Rendelések"
-- Rendelések CRUD funkciók
+---
+### ✅ V-OSZTÁLY JOGOSULTSÁGOK FRISSÍTÉSE - 2025-12-06 22:20
+- **Build:** Sikeres tiszta build (`clean` + `assembleRelease`)
+- **APK:** `~/Desktop/Elitdroszt-VClassFix-20251206-2220.apk`
+- **Telepítés:** Sikeresen frissítve a telefonon (`adb install -r`)
+- **Funkció:** Ellenőrizd a V-Osztály tabot! Ha nem vagy admin, többé nem láthatod a "+" gombot és a drag handle-t, de törölni tudsz.
 
 ---
 
-🎉 **NAGY SIKER: TOP SCROLL TAB NAVIGATION KÉSZ!** 🎉
-
-**Navigation Flow:**
-```
-DashboardScreen
-├── Header (DROSZTOK + User info)
-├── Horizontal Scroll Tab Bar
-│   ├── Akadémia
-│   ├── Belváros
-│   ├── Budai
-│   ├── Conti
-│   ├── Crowne
-│   ├── Kozmo
-│   ├── Reptér
-│   ├── V-Osztály (conditionally)
-│   ├── 213 (conditionally)
-│   ├── Térkép (admin)
-│   ├── Admin (admin)
-│   ├── Címkiosztó (admin)
-│   └── Profil
-└── Tab Content (LocationScreen vagy placeholder)
-```
-
-**Következő alkalom:** UI finomítás + V-Osztály Screen
-
+### ✅ GPS GYORSÍTÁS ÉS OPTIMALIZÁLÁS - 2025-12-06 22:30
+- **Probléma:** Drosztra belépéskor 2-3 mp "gondolkodás" volt a friss GPS jelre várva.
+- **Megoldás:**
+  1. `getLastKnownPositionAsync` bevezetése: Azonnal betölti a cache-elt pozíciót, így nincs várakozás.
+  2. `getCurrentPositionAsync`: A háttérben pontosít.
+  3. **Intervallum:** 30 mp -> **10 mp**-re csökkentve (gyorsabb reakció).
+- **Szerver terhelés:** **0 (Nulla)**. A sűrűbb ellenőrzés csak a telefon processzorát használja (geometriai számítás), a szerverhez csak zónaelhagyáskor fordul.
 
 ---
 
-## 🆕 FRISSÍTÉS - 2025-11-22 23:30
-
-### 20. UI Finomítások - LocationScreen KÉSZ ✨
-✅ **LocationScreen.tsx teljes UI optimalizálás**
-
-**Header optimalizálás:**
-- ✅ GPS gomb + Cím egy sorban (flexDirection: 'row')
-- ✅ GPS gomb bal oldalt, Cím középen, Spacer jobb oldalt
-- ✅ "Sorban: X fő" törlése (felesleges)
-- ✅ Header magasság csökkentése: `paddingVertical: 12`
-- ✅ Kompakt, tiszta megjelenés
-
-**GPS gomb logika átdolgozás:**
-- ✅ GPS OFF → Zöld háttér (teszt mód)
-- ✅ GPS ON + Zónában → Zöld háttér
-- ✅ GPS ON + Kívül → Piros háttér
-- ✅ "Kívül" felirat törlése (csak szín jelzi)
-- ✅ Egyszerűbb, vizuálisabb feedback
-
-**Akció gombok optimalizálás:**
-- ✅ Mind a 4 gomb egyforma széles (`flex: 1`)
-- ✅ Egyenletes elosztás (`gap: 8`)
-- ✅ Magasság 30%-kal alacsonyabb (`paddingVertical: 11` volt 16)
-- ✅ Kompaktabb, de jól nyomható
-- ✅ Be, Ki, 🔥, 🍔📞 gombok
-
-**Gombok layout:**
-```
-┌─────────┬─────────┬─────────┬─────────┐
-│   Be    │   Ki    │   🔥    │  🍔📞   │
-│ (zöld)  │ (narancs)│ (piros) │  (kék)  │
-└─────────┴─────────┴─────────┴─────────┘
-```
-
-**TESZTELVE ÉS MŰKÖDIK:** ✅
-- Header kompakt és tiszta
-- GPS gomb színlogika működik
-- Akció gombok egyenlő méretűek
-- Minden gomb jól nyomható
-- Responsive layout
+### ✅ GPS GYORSÍTÁS DEPLOY - 2025-12-06 22:30
+- **APK:** `~/Desktop/Elitdroszt-FastGPS-20251206-2230.apk`
+- **Build idő:** 50 másodperc (Cache aktív)
+- **Eredmény:** Sikeres telepítés. A felhasználó mostantól instant betöltést tapasztal a drosztra lépéskor (nem kell várni a GPS lockra).
 
 ---
 
-## 📊 FRISSÍTETT PROJEKT STÁTUSZ
-
-**Befejezett:** 90% (+5%)  
-**Aktuális fázis:** LocationScreen UI tökéletes! V-Osztály következik  
-**Következő:** V-Osztály Screen + Sub-tabok (Sor + Rendelések)
-
-**Kész komponensek:**
-- ✅ Firebase config
-- ✅ AuthContext
-- ✅ TypeScript types
-- ✅ LoginScreen (Modal password reset)
-- ✅ RegisterScreen (URH szám)
-- ✅ PendingApprovalScreen
-- ✅ AppNavigator
-- ✅ App.tsx
-- ✅ **DashboardScreen (Top Scroll Tab Navigation)** ✅
-- ✅ **LocationScreen (100% KÉSZ + UI TÖKÉLETES!)** 🆕
-  - ✅ Check-in / Check-out
-  - ✅ Firestore realtime sync
-  - ✅ Members lista
-  - ✅ 🔥 Flame gomb
-  - ✅ 🍔📞 Food/Phone gomb
-  - ✅ 📍 GPS Toggle + Geofencing
-  - ✅ Kompakt header (GPS + Cím egy sorban)
-  - ✅ Optimalizált akció gombok (egyenlő méret)
-  - ✅ GPS vizuális feedback (zöld/piros)
-- ✅ GeofenceService
-
-**Hátralevő főbb feladatok:**
-1. ⏳ V-Osztály sub-tabok (Sor + Rendelések) - KÖVETKEZŐ
-2. ⏳ Reptér sub-tabok (Reptér + Rendelések + Emirates)
-3. ⏳ 213-as rendelések lista
-4. ⏳ Admin Panel (User management)
-5. ⏳ Térkép (Sofőrök pozíciói)
-6. ⏳ Címkiosztó (Admin funkció)
-7. ⏳ Drag & drop sorrendezés (Admin - később)
-8. ⏳ Profil szerkesztés
-9. ⏳ Background location tracking (később)
-
-**BECSÜLT HÁTRALEVŐ IDŐ:** ~3-4 óra fejlesztés
+### ✅ GPS FIX - PÁRHUZAMOS LEKÉRÉS - 2025-12-06 22:40
+- **Probléma:** A soros `await lastKnown` -> `await current` végrehajtás lassulást okozott, ha a system cache lassan válaszolt.
+- **Megoldás:** Teljes párhuzamosítás (Fire-and-forget). A két lekérés egyszerre indul, nem blokkolják egymást. Amint bármelyik beérkezik, a UI frissül.
+- **Eredmény:** Maximális sebesség, nincs várakozás.
 
 ---
 
-## 🎨 UI DESIGN ÖSSZEFOGLALÓ
-
-**LocationScreen struktúra:**
-```
-┌────────────────────────────────────────┐
-│  [GPS: OFF]  Akadémia Sor   [Spacer]  │ ← Header (kompakt)
-├────────────────────────────────────────┤
-│                                        │
-│  1. 001S - ABC123                  [Te]│ ← Members lista
-│  2. 002SK - DEF456                     │
-│  3. 🔥 003V - GHI789                   │
-│  4. 🍔📞 004 - JKL012              [Te]│
-│                                        │
-├────────────────────────────────────────┤
-│ [Be] [Ki] [🔥] [🍔📞]                  │ ← Akció gombok (kompakt)
-└────────────────────────────────────────┘
-```
-
-**Színek:**
-- Header: Indigo (#4f46e5)
-- GPS OFF: Zöld (#10b981)
-- GPS ON + Belül: Zöld (#10b981)
-- GPS ON + Kívül: Piros (#ef4444)
-- Be gomb: Zöld (#10b981)
-- Ki gomb: Narancs (#f59e0b)
-- 🔥 gomb: Piros (#ef4444)
-- 🍔📞 gomb: Kék (#3b82f6)
+### ✅ INSTANT UI - BLOKKOLÓ LOADING ELTÁVOLÍTÁSA - 2025-12-06 22:55
+- **Probléma:** A felhasználó továbbra is "gondolkodást" tapasztalt. Ez nem a GPS, hanem a Firebase adatbetöltésre váró *teljes képernyős* ActivityIndicator (homokóra) volt.
+- **Megoldás:**
+  1. A blokkoló `if (loading) return <Spinner />` részt eltávolítottuk.
+  2. A UI (gombok, keret) **azonnal renderelődik**.
+  3. A lista helyén jelenik meg csak egy kis spinner, amíg az adat nem jön meg.
+- **Eredmény:** A felhasználó azonnal látja a gombokat és tud interakcióba lépni, még mielőtt a lista betöltene.
 
 ---
 
-🎉 **LOCATIONSCREEN 100% KÉSZ ÉS TÖKÉLETES!** 🎉
-
-**LocationScreen funkciók teljes lista:**
-- ✅ Realtime Firestore sync
-- ✅ Check-in / Check-out
-- ✅ Members lista pozíciókkal
-- ✅ "Te" badge
-- ✅ 🔥 Flame gomb (visszavétel)
-- ✅ 🍔📞 Food/Phone gomb (toggle)
-- ✅ 📍 GPS Toggle (ON/OFF)
-- ✅ 🗺️ Geofencing (auto check-out)
-- ✅ 🚫 GPS védelem (zóna ellenőrzés)
-- ✅ 🎨 Kompakt header (GPS + Cím)
-- ✅ 🎨 Optimalizált akció gombok
-- ✅ 🎨 GPS vizuális feedback
-- ✅ Loading states
-- ✅ Error handling
-- ✅ Responsive design
-
-**Következő alkalom:** V-Osztály Screen (Sub-tabok: Sor + Rendelések)
-
+### ✅ ZÓNA UI JAVÍTÁS ÉS GOMB LOGIKA - 2025-12-06 23:25
+- **Fejléc:**
+  - ⛔ Ikon: Ha a sofőr nincs a zónában (gpsEnabled aktív).
+  - ⬆️ Ikon: Ha a sofőr a zónában van (fehér négyzetben nyíl).
+- **"Be" Gomb:**
+  - Mostantól **INAKTÍV (Disabled)**, amíg a sofőr a zónán kívül van.
+  - Zóna kikapcsolása esetén (gpsEnabled=false) mindig aktív.
+- **Logika:** A felesleges hibaüzenet (Alert) eltávolítva, mivel a gombot úgysem lehet megnyomni.
 
 ---
 
-## 🆕 FRISSÍTÉS - 2025-11-23 00:00
-
-### 21. GPS Gomb Migráció - KÉSZ 📍
-✅ **GPS toggle átrakva a main header-be (DROSZTOK mellé)**
-
-**Változások:**
-- ❌ GPS gomb eltávolítva LocationScreen header-ből
-- ✅ GPS gomb hozzáadva DashboardScreen header-hez (DROSZTOK mellé)
-- ✅ GPS state management DashboardScreen-ben
-- ✅ GPS prop átadás LocationScreen-nek (`gpsEnabled`)
-- ✅ GPS színlogika megfordítva:
-  - GPS OFF → Piros (disabled)
-  - GPS ON → Zöld (enabled)
-
-**GPS gomb elhelyezés:**
-```
-┌────────────────────────────────────┐
-│ DROSZTOK [GPS: OFF] | Szia, 012!  │
-│                      Kijelentkezés │
-└────────────────────────────────────┘
-```
+### ✅ SZINKRONIZÁLT GYORS BEJELENTKEZÉS - PÁRHUZAMOSÍTÁS - 2025-12-06 23:20
+- **Cél:** A bejelentkezés megjelenése legyen szinkronban a többi felhasználóval, de a lehető leggyorsabb legyen mindenhol.
+- **Megoldás:**
+  1. Optimista UI kivétele (hogy ne legyen eltérés a saját és mások látványa között).
+  2. **Promise.all Párhuzamosítás:** A `checkoutFromAllLocations` (régi hely elhagyása) és az `updateDoc` (új helyre belépés) egyszerre indul el.
+  3. Így a belépés nem várja meg, amíg a többi drosztról kijelentkeztet a rendszer, hanem azonnal megtörténik.
+- **Eredmény:** Szinkronizált megjelenés, maximális hálózati sebességgel.
 
 ---
 
-### 22. V-Osztály Screen - KÉSZ 📑
-✅ **VClassScreen.tsx létrehozva - Sub-tabok működnek**
-
-**Sub-tab struktura:**
-```
-┌────────────────┬────────────────┐
-│ V-Osztály Sor  │  Rendelések    │
-└────────────────┴────────────────┘
-```
-
-**Sub-tab gombok:**
-- ✅ 50-50% szélesség (`flex: 1`)
-- ✅ Magasság egyezik a main tab gombokkal (`paddingVertical: 6`)
-- ✅ Aktív/Inaktív állapot (fekete/szürke)
-
-**V-Osztály Sor tab (KÉSZ):**
-- ✅ LocationScreen-hez hasonló funkciók
-- ✅ Check-in / Check-out
-- ✅ Members lista
-- ✅ 🔥 Flame gomb
-- ✅ 🍔📞 Food/Phone gomb
-- ✅ Firestore: `locations/V-Osztály`
-- ✅ Realtime sync
-
-**Rendelések tab:**
-- ⏳ Placeholder (Hamarosan...)
-
-**TESZTELVE ÉS MŰKÖDIK:** ✅
-- V-Osztály tab megjelenik (ha jogosult)
-- Sub-tab váltás működik
-- Sor funkcionalitás teljes
-- GPS state átadás működik
+### 🏁 NAPI ZÁRÁS - 2025-12-06 23:25
+- **Státusz:** A rendszer stabil, gyors és a felhasználói visszajelzések alapján "nagyon szuper".
+- **Verzió:** `Elitdroszt-SyncFast-...` (Legutolsó build)
+- **Elért eredmények:**
+  1. ✅ App név és ikon csere.
+  2. ✅ APK build és telepítési hibák javítása (Clean build, Daemon stop).
+  3. ✅ V-Osztály jogosultságok szigorítása.
+  4. ✅ GPS és UI sebesség maximalizálása (Instant UI, Párhuzamos Check-in).
+  5. ✅ Zóna indikátorok (⛔ / ⬆️) bevezetése.
+- **Következő lépések (Holnap):** További finomhangolások.
 
 ---
 
-## 📊 VÉGSŐ PROJEKT STÁTUSZ (MA)
-
-**Befejezett:** 92% (+2%)  
-**Mai munka:** GPS migráció + V-Osztály Screen alapok  
-**Következő (holnap):** V-Osztály Rendelések + Reptér Screen + 213
-
-**Ma elkészült komponensek:**
-- ✅ Firebase config
-- ✅ AuthContext
-- ✅ TypeScript types
-- ✅ LoginScreen (Modal password reset)
-- ✅ RegisterScreen (URH szám)
-- ✅ PendingApprovalScreen
-- ✅ AppNavigator
-- ✅ App.tsx
-- ✅ **DashboardScreen (GPS gomb header-ben)** 🆕
-- ✅ **LocationScreen (GPS prop support)** 🆕
-- ✅ **VClassScreen (Sub-tabok, Sor funkciók)** 🆕
-- ✅ GeofenceService
-
-**Holnapra maradt:**
-1. ⏳ V-Osztály Rendelések tab (Notes CRUD)
-2. ⏳ Reptér sub-tabok (Reptér + Rendelések + Emirates)
-3. ⏳ 213-as rendelések lista
-4. ⏳ Admin Panel (User management)
-5. ⏳ Térkép (Sofőrök pozíciói)
-6. ⏳ Címkiosztó (Admin funkció)
-7. ⏳ Profil szerkesztés
-
-**BECSÜLT HÁTRALEVŐ IDŐ:** ~2-3 óra fejlesztés (holnap)
+### ✅ APK MÉRET OPTIMALIZÁLÁS (SLIM BUILD) - 2025-12-07 10:35
+- **Probléma:** A 77 MB-os APK feltöltése sikertelen volt (FTP szerver méret/timeout korlát miatt).
+- **Megoldás:** **Split APK** engedélyezése a `build.gradle`-ben. Különálló APK-k generálása CPU architektúránként, az univerzális "óriás APK" helyett.
+- **Eredmény:**
+  - Eredeti méret: **77 MB**
+  - Új méret (ARM64): **31 MB** (~60% csökkenés!)
+  - Fájl: `~/Desktop/Elitdroszt-SLIM-ARM64-20251207.apk`
+  - Az FTP feltöltés újra működik.
 
 ---
 
-## 🎯 HOLNAPI TERV
+## [2025-12-09] - Android Build Finalization & Stability Fixes
+- **CRITICAL STABILITY FIX:** Javítva a profilfrissítéskor (pl. Taxi -> V-Osztály váltás) fellépő alkalmazás-összeomlás. A hiba oka a régi névgenerálási logika és a párhuzamos Firestore műveletek voltak.
+- **Geofence & Undo Logic:**
+    - Zóna elhagyása (vagy admin általi kiléptetés) esetén a rendszer mostantól **automatikusan törli** az "Undo" (Láng) lehetőségét. Csak a felhasználó általi, szándékos kijelentkezés jogosít visszaállításra.
+    - Implementálva a "Türelmi Zóna" (3 egymást követő GPS hiba/zónán kívüli jelzés kell a kidobáshoz), hogy a GPS pontatlanság ne okozzon azonnali kidobást.
+    - Javítva a dupla "Zóna elhagyva" értesítés (a flag azonnali törlésével).
+- **Névformátum Egységesítés:**
+    - Minden felületen (Mobil App Belépés, Profil Frissítés, Webes megjelenítés) egységesítettük a rövidített suffix logikát (pl. `646K - RENDSZÁM`).
+    - Megszűnt a "V-Osztály" vagy "VIP Kombi" típusnevek teljes kiírásából adódó webes megjelenítési hiba.
+- **PermissionGuard:**
+    - **Admin Mock Kivétel:** Finomhangolva a `mockLocation` érzékelés. Ha az alkalmazás még tölt (`loading`), vagy a felhasználói profil még nem elérhető, a rendszer nem büntet. Adminisztrátoroknál a mock jelző automatikusan törlésre kerül.
+    - iOS és Android specifikus lépések szétválasztása előkészítve.
+- **Build:** Sikeres Universal APK build (`~/build/Elitdroszt-Universal.apk`), minden javítást tartalmaz.
 
-### 1. V-Osztály Rendelések tab
-- Notes lista (Firestore: `locations/V-Osztály/notes`)
-- CRUD funkciók:
-  - ✏️ Note hozzáadás (csak admin)
-  - 🗑️ Note törlés (mindenki)
-  - 📝 Note szerkesztés (csak admin)
-- Realtime sync
+## [2025-12-09] - Registration Security, Error Handling & Native Android Permissions
+- **Registration Security:**
+    - **Dupla Mezők:** Regisztrációkor az Email és Jelszó mezőket is meg kell erősíteni.
+    - **Valós idejű validáció:** Ha a pár nem egyezik, a mező piros keretet kap.
+- **Global Error Handling:**
+    - Beépítettünk egy **Error Boundary**-t, ami elkapja az app összeomlásait.
+    - **Automatikus Mentés:** A hiba azonnal mentésre kerül a Firestore `system_errors` kollekciójába.
+    - **Email Jelentés:** A felhasználó egy gombbal emailt küldhet a fejlesztőnek (`bader.oli@gmail.com`).
+- **Android Permissions (Unused Apps):**
+    - **Szigorított Ellenőrzés:** Az "App szüneteltetése ha nem használja" kapcsoló állapotát mostantól natív szinten (`PackageManager.isAutoRevokeWhitelisted`) ellenőrizzük.
+    - A "Tovább" gomb csak akkor válik aktívvá, ha a felhasználó tényleg kikapcsolta a funkciót.
+    - **UX:** Frissített információs szöveg (`"Nem használt alkalmazások → App szüneteltetés, nem használja : KI"`) és pontosabb navigáció az App Info képernyőre.
+- **Build Update:**
+    - Sikeres Clean Build (Android) és Natív Modul Frissítés. Minden funkció élesítve.
 
-### 2. Reptér Screen
-- Sub-tabok: Reptér | Rendelések | Emirates
-- 3 különböző sor (members, notes, emiratesMembers)
-- LocationScreen-hez hasonló funkciók
-
-### 3. 213-as Screen
-- Csak rendelések lista
-- Note CRUD (törlés: mindenki, szerkesztés: admin)
-
----
-
-## 🎉 MAI EREDMÉNYEK
-
-**Létrehozott fájlok:**
-- `src/services/GeofenceService.ts` ✅
-- `src/screens/driver/VClassScreen.tsx` ✅
-
-**Módosított fájlok:**
-- `src/screens/driver/DashboardScreen.tsx` (GPS gomb migráció) ✅
-- `src/screens/driver/LocationScreen.tsx` (GPS prop, header cleanup) ✅
-
-**Működő funkciók:**
-- ✅ Top Scroll Tab Navigation
-- ✅ GPS Toggle (global, header-ben)
-- ✅ 7 taxiállomás (Akadémia, Belváros, Budai, Conti, Crowne, Kozmo, Reptér)
-- ✅ V-Osztály Screen (Sub-tabok + Sor funkciók)
-- ✅ Check-in / Check-out
-- ✅ GPS Geofencing (auto checkout)
-- ✅ 🔥 Flame gomb
-- ✅ 🍔📞 Food/Phone gomb
-- ✅ Realtime Firestore sync
-- ✅ Loading states
-- ✅ Error handling
-- ✅ Kompakt UI
-
----
-
-🌙 **JÓ ÉJSZAKÁT! HOLNAP FOLYTATJUK!** 🌙
-
-**Mai chat hossza:** ~200+ üzenet  
-**Következő chat:** Friss kezdés V-Osztály Rendelések-kel
-
-**Fontos:** Holnap ne felejts el beilleszteni ezt a PROGRESS_LOG.md-t az új chat-be!
-
+### v1.0.21 (2025-12-11)
+- **UI UX:**
+  - Moved action buttons (Be, Ki, Láng, Food/Phone) to a fixed footer at the bottom of the screen.
+  - Implemented absolute positioning for the footer to ensure it stays fixed above the home indicator.
+  - Increased bottom padding for the driver list to prevent content overlap.
+  - Removed deprecated "VERZIÓ: V-FULL-FEATURES" label.
+- **Android Fixes:**
+  - Refactored Android package structure from `com.anonymous.drosztokmobile` to `hu.elitdroszt.mobile`.
+### v1.0.22 (2025-12-13)
+- **Security & Session Management:**
+  - **Single Device Enforcement:** Implemented strict session monitoring. Logging in on a new device automatically logs out the previous session.
+  - **Global Checkout on Login:** Users are automatically removed from all queues (Location, V-Class, Emirates) immediately upon login to ensure a clean state.
+  - **Session ID:** Integrated secure session ID generation and Firestore synchronization.
+  - **Sync Logic:** Verified and synchronized "Double Queue" (V-Class + City) and "Global Checkout" rules with web application logic.

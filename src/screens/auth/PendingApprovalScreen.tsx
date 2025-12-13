@@ -7,8 +7,21 @@ import {
 } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../config/firebase';
+import { useAuth } from '../../context/AuthContext';
 
 export default function PendingApprovalScreen() {
+  const { refreshProfile } = useAuth();
+
+  // Poll for approval status every 3 seconds
+  React.useEffect(() => {
+    const interval = setInterval(async () => {
+      console.log('Checking approval status...');
+      await refreshProfile();
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [refreshProfile]);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -24,8 +37,10 @@ export default function PendingApprovalScreen() {
         <Text style={styles.title}>Adminisztrátori jóváhagyásra vár</Text>
         <Text style={styles.message}>
           A fiókod adminisztrátori jóváhagyásra vár. Kérjük, légy türelemmel.
+          {"\n"}
+          (Az oldal automatikusan frissül)
         </Text>
-        
+
         <TouchableOpacity
           style={styles.button}
           onPress={handleLogout}

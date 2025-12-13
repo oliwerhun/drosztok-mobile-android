@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "drosztok-mobile",
-    "slug": "drosztok-mobile",
-    "version": "1.0.0",
+    "name": "Elitdroszt",
+    "slug": "elitdroszt",
+    "version": "1.0.22",
+    "versionCode": 16,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -13,14 +14,24 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.drosztokmobile"
+      "bundleIdentifier": "com.oliwerhun.elitdroszt",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ],
+        "NSLocationWhenInUseUsageDescription": "Az alkalmazásnak szüksége van a helyzetére a drosztok eléréséhez és a sorbaálláshoz.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Az alkalmazás a háttérben is figyeli, hogy Ön a droszton tartózkodik-e, így elkerülhető a véletlen kiléptetés.",
+        "NSLocationAlwaysUsageDescription": "A folyamatos helymeghatározás biztosítja a droszt-rendszer pontos működését a háttérben is."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.anonymous.drosztokmobile"
+      "package": "hu.elitdroszt.mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"

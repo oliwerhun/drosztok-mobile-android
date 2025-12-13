@@ -11,6 +11,7 @@ import PendingApprovalScreen from '../screens/auth/PendingApprovalScreen';
 
 // Main Dashboard
 import DashboardScreen from '../screens/driver/DashboardScreen';
+import DebugScreen from '../screens/DebugScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,7 +41,10 @@ export default function AppNavigator() {
           <Stack.Screen name="PendingApproval" component={PendingApprovalScreen} />
         ) : (
           // User is logged in and APPROVED -> Show Dashboard with Tabs
-          <Stack.Screen name="Dashboard" component={DashboardScreen} />
+          <>
+            <Stack.Screen name="Dashboard" component={DashboardScreen} />
+            <Stack.Screen name="Debug" component={DebugScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

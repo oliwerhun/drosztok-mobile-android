@@ -1,7 +1,9 @@
-package com.anonymous.drosztokmobile
+package hu.elitdroszt.mobile
 
 import android.app.Application
 import android.content.res.Configuration
+import com.anonymous.drosztokmobile.BuildConfig
+import com.anonymous.drosztokmobile.R
 
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
@@ -25,6 +27,7 @@ class MainApplication : Application(), ReactApplication {
             PackageList(this).packages.apply {
               // Packages that cannot be autolinked yet can be added manually here, for example:
               // add(MyReactNativePackage())
+              add(AppPackage())
             }
 
           override fun getJSMainModuleName(): String = ".expo/.virtual-metro-entry"

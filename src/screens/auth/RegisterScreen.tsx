@@ -10,24 +10,44 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
+  ActionSheetIOS,
 } from 'react-native';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../config/firebase';
-import { Picker } from '@react-native-picker/picker';
+import { useTheme } from '../../context/ThemeContext'; // Import hozzáadása
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function RegisterScreen({ navigation }: any) {
+  const { colors } = useTheme(); // Theme hook
   const [email, setEmail] = useState('');
+  const [confirmEmail, setConfirmEmail] = useState('');
   const [callsign, setCallsign] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [licensePlate, setLicensePlate] = useState('');
   const [userType, setUserType] = useState<'' | 'Taxi' | 'Kombi Taxi' | 'VIP' | 'VIP Kombi' | 'V-Osztály'>('');
   const [loading, setLoading] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
 
   const handleRegister = async () => {
+    // ... logic remains same ...
     // Validations
-    if (!email.trim() || !callsign.trim() || !password || !licensePlate.trim() || !userType) {
+    if (!email.trim() || !confirmEmail.trim() || !callsign.trim() || !password || !confirmPassword || !licensePlate.trim() || !userType) {
       Alert.alert('Hiba', 'Kérlek töltsd ki az összes mezőt!');
+      return;
+    }
+
+    if (email.trim() !== confirmEmail.trim()) {
+      Alert.alert('Hiba', 'A két email cím nem egyezik meg.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Hiba', 'A két jelszó nem egyezik meg.');
       return;
     }
 
@@ -91,7 +111,31 @@ export default function RegisterScreen({ navigation }: any) {
     }
   };
 
+  const handleTypeSelection = () => {
+    if (Platform.OS === 'ios') {
+      // iOS natív ActionSheet
+      const options = ['Mégse', 'Taxi', 'Kombi Taxi', 'VIP', 'VIP Kombi', 'V-Osztály'];
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options,
+          cancelButtonIndex: 0,
+          title: 'Válassz típust',
+          userInterfaceStyle: 'dark', // Kövesse a témát, de itt nem tudjuk könnyen átadni, de alapból követi
+        },
+        (buttonIndex) => {
+          if (buttonIndex !== 0) {
+            setUserType(options[buttonIndex] as any);
+          }
+        }
+      );
+    } else {
+      // Android - modal megoldás
+      setShowPicker(true);
+    }
+  };
+
   const getErrorMessage = (code: string) => {
+    // ... logic remains same ...
     switch (code) {
       case 'auth/email-already-in-use':
         return 'Ez az email cím már használatban van.';
@@ -107,15 +151,20 @@ export default function RegisterScreen({ navigation }: any) {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}
+      style={[styles.container, { backgroundColor: colors.background }]}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>DROSZTOK</Text>
-        <Text style={styles.subtitle}>Regisztráció</Text>
+        <Text style={[styles.title, { color: colors.primary || '#4f46e5' }]}>DROSZTOK</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Regisztráció</Text>
 
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
+            (email.length > 0 && confirmEmail.length > 0 && email !== confirmEmail) && { borderColor: '#ef4444', borderWidth: 1.5 }
+          ]}
           placeholder="Email cím"
+          placeholderTextColor={colors.textSecondary}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -124,8 +173,24 @@ export default function RegisterScreen({ navigation }: any) {
         />
 
         <TextInput
-          style={styles.input}
+          style={[
+            styles.input,
+            { backgroundColor: colors.card, color: colors.text, borderColor: colors.border },
+            (email.length > 0 && confirmEmail.length > 0 && email !== confirmEmail) && { borderColor: '#ef4444', borderWidth: 1.5 }
+          ]}
+          placeholder="Email cím megerősítése"
+          placeholderTextColor={colors.textSecondary}
+          value={confirmEmail}
+          onChangeText={setConfirmEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          editable={!loading}
+        />
+
+        <TextInput
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
           placeholder="URH Szám (3 számjegy)"
+          placeholderTextColor={colors.textSecondary}
           value={callsign}
           onChangeText={setCallsign}
           keyboardType="number-pad"
@@ -133,46 +198,116 @@ export default function RegisterScreen({ navigation }: any) {
           editable={!loading}
         />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Jelszó (min. 6 karakter)"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          editable={!loading}
-        />
+        <View style={[
+          styles.passwordContainer,
+          { backgroundColor: colors.card, borderColor: colors.border },
+          (password.length > 0 && confirmPassword.length > 0 && password !== confirmPassword) && { borderColor: '#ef4444', borderWidth: 1.5 }
+        ]}>
+          <TextInput
+            style={[styles.passwordInput, { color: colors.text }]}
+            placeholder="Jelszó (min. 6 karakter)"
+            placeholderTextColor={colors.textSecondary}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry={!showPassword}
+            editable={!loading}
+            textContentType="password"
+            autoCorrect={false}
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={[
+          styles.passwordContainer,
+          { backgroundColor: colors.card, borderColor: colors.border },
+          (password.length > 0 && confirmPassword.length > 0 && password !== confirmPassword) && { borderColor: '#ef4444', borderWidth: 1.5 }
+        ]}>
+          <TextInput
+            style={[styles.passwordInput, { color: colors.text }]}
+            placeholder="Jelszó megerősítése"
+            placeholderTextColor={colors.textSecondary}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry={!showConfirmPassword}
+            editable={!loading}
+            textContentType="password"
+            autoCorrect={false}
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
 
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
           placeholder="Rendszám (pl. ABC123)"
+          placeholderTextColor={colors.textSecondary}
           value={licensePlate}
           onChangeText={setLicensePlate}
           autoCapitalize="characters"
           editable={!loading}
         />
 
-        <View style={[styles.pickerContainer, !userType && styles.pickerPlaceholder]}>
-          <Picker
-            selectedValue={userType}
-            onValueChange={(value) => {
-              if (value !== '') {
-                setUserType(value);
-              }
-            }}
-            enabled={!loading}
-            style={styles.picker}
+        <View>
+          <TouchableOpacity
+            style={[styles.pickerButton, !userType && styles.pickerPlaceholder, { backgroundColor: colors.card, borderColor: colors.border }]}
+            onPress={handleTypeSelection}
+            disabled={loading}
           >
-            <Picker.Item label="Válassz..." value="" color="#999" />
-            <Picker.Item label="Taxi" value="Taxi" />
-            <Picker.Item label="Kombi Taxi" value="Kombi Taxi" />
-            <Picker.Item label="VIP" value="VIP" />
-            <Picker.Item label="VIP Kombi" value="VIP Kombi" />
-            <Picker.Item label="V-Osztály" value="V-Osztály" />
-          </Picker>
+            <Text style={[styles.pickerButtonText, !userType && { color: colors.textSecondary }, userType && { color: colors.text }]}>
+              {userType || 'Válassz típust...'}
+            </Text>
+            <Ionicons
+              name="chevron-down"
+              size={20}
+              color={colors.textSecondary}
+            />
+          </TouchableOpacity>
+
+          {/* Android Modal Picker */}
+          {Platform.OS === 'android' && showPicker && (
+            <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <ScrollView style={styles.pickerScrollView}>
+                {['Taxi', 'Kombi Taxi', 'VIP', 'VIP Kombi', 'V-Osztály'].map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.pickerItem,
+                      userType === type && { backgroundColor: (colors.background || '#eef2ff') },
+                      { borderBottomColor: colors.border }
+                    ]}
+                    onPress={() => {
+                      setUserType(type as any);
+                      setShowPicker(false);
+                    }}
+                  >
+                    <Text style={[
+                      styles.pickerItemText,
+                      { color: colors.text },
+                      userType === type && { color: (colors.primary || '#4f46e5'), fontWeight: '600' }
+                    ]}>
+                      {type}
+                    </Text>
+                    {userType === type && (
+                      <Ionicons name="checkmark" size={20} color={colors.primary || '#4f46e5'} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[styles.button, loading && styles.buttonDisabled, { backgroundColor: colors.primary || '#4f46e5' }]}
           onPress={handleRegister}
           disabled={loading}
         >
@@ -187,12 +322,12 @@ export default function RegisterScreen({ navigation }: any) {
           onPress={() => navigation.navigate('Login')}
           disabled={loading}
         >
-          <Text style={styles.linkText}>
+          <Text style={[styles.linkText, { color: colors.primary || '#4f46e5' }]}>
             Van már fiókod? Jelentkezz be!
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoidingView >
   );
 }
 
@@ -227,20 +362,78 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     fontSize: 16,
+    color: '#1f2937', // Ensure text is visible
   },
-  pickerContainer: {
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     marginBottom: 12,
-    overflow: 'hidden',
+  },
+  passwordInput: {
+    flex: 1,
+    padding: 12,
+    fontSize: 16,
+    color: '#1f2937', // Ensure text is visible
+  },
+  eyeIcon: {
+    padding: 12,
+  },
+  pickerButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    color: '#1f2937',
   },
   pickerPlaceholder: {
-    // Optional: add a visual indicator when no selection is made
+    // Optional styling for placeholder state
   },
-  picker: {
-    height: 50,
+  pickerPlaceholderText: {
+    color: '#9ca3af',
+  },
+  pickerDropdown: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    marginTop: -8,
+    marginBottom: 12,
+    maxHeight: 200,
+    overflow: 'hidden',
+  },
+  pickerScrollView: {
+    maxHeight: 200,
+  },
+  pickerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  pickerItemSelected: {
+    backgroundColor: '#eef2ff',
+  },
+  pickerItemText: {
+    fontSize: 16,
+    color: '#1f2937',
+  },
+  pickerItemTextSelected: {
+    color: '#4f46e5',
+    fontWeight: '600',
   },
   button: {
     backgroundColor: '#4f46e5',

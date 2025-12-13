@@ -89,14 +89,23 @@ android {
 
     namespace 'com.anonymous.drosztokmobile'
     defaultConfig {
-        applicationId 'com.anonymous.drosztokmobile'
+        applicationId 'hu.elitdroszt.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 22
+        versionName "1.0.22"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
+
+    splits {
+        abi {
+            reset()
+            enable false
+            universalApk false
+        }
+    }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
