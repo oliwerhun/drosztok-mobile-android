@@ -552,16 +552,19 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
 
 
-      {loading ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-        </View>
-      ) : userProfile?.role === 'admin' ? (
+      {userProfile?.role === 'admin' ? (
         <View style={{ flex: 1 }}>
           <FlatList
             data={members}
             keyExtractor={(item) => item.uid}
             renderItem={({ item }) => renderItem({ item, drag: () => { }, isActive: false } as any)}
+            ListHeaderComponent={
+              loading ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color="#3b82f6" />
+                </View>
+              ) : null
+            }
             contentContainerStyle={{ paddingBottom: 150 }}
             style={{ flex: 1 }}
           />
@@ -572,6 +575,13 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
             data={members}
             keyExtractor={(item) => item.uid}
             renderItem={({ item }) => renderItem({ item, drag: () => { }, isActive: false } as any)}
+            ListHeaderComponent={
+              loading ? (
+                <View style={{ padding: 20, alignItems: 'center' }}>
+                  <ActivityIndicator size="small" color="#3b82f6" />
+                </View>
+              ) : null
+            }
             contentContainerStyle={{ paddingBottom: 150 }}
             style={{ flex: 1 }}
           />

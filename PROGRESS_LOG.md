@@ -1900,3 +1900,36 @@ Minden sáv magasságának egységesítése az akció gombok magasságára (Be, 
 
 ---
 *Implementálva: 2025.12.13. 14:24*
+
+## 2025.12.13. - Bejelentkezési Sebesség Optimalizálás (Instant UI)
+
+### Probléma:
+- A "Be" gomb megnyomása után lassú megjelenés (teljes képernyős loading spinner)
+- A felhasználó nem látja azonnal a UI-t
+
+### Megoldás (Korábbi optimalizáció visszaállítása):
+**Forrás**: PROGRESS_LOG.md - 2025-12-06 22:55 - "INSTANT UI" optimalizáció
+
+**Változtatások:**
+1. **Blokkoló loading eltávolítása**:
+   - Teljes képernyős `ActivityIndicator` törölve
+   - `if (loading) return <Spinner />` logika eltávolítva
+
+2. **Instant UI bevezetése**:
+   - A gombok és keret **azonnal renderelődnek**
+   - Csak a lista tetején jelenik meg kis spinner (`ListHeaderComponent`)
+   - A felhasználó azonnal látja a gombokat és tud interakcióba lépni
+
+### Eredmény:
+- ✅ Azonnali UI megjelenés
+- ✅ Gombok azonnal kattinthatók
+- ✅ Csak a lista betöltése mutat kis spinnert
+- ✅ "Csalás" a megjelenés gyorsaságával - a UI azonnal látszik, még mielőtt az adat betöltene
+
+### Módosított fájl:
+- `src/screens/driver/LocationScreen.tsx`
+  - Blokkoló loading törölve
+  - ListHeaderComponent hozzáadva kis spinnerrel
+
+---
+*Implementálva: 2025.12.13. 14:36*
