@@ -1824,3 +1824,34 @@ Egységes elnevezési rendszer kialakítása az app UI elemeihez, hogy a jövőb
 
 ---
 *Implementálva: 2025.12.13. 14:05*
+
+## 2025.12.13. - UI Magasság Egységesítés
+
+### Cél:
+Minden sáv magasságának egységesítése az akció gombok magasságára (Be, Ki, Láng, Food/Phone).
+
+### Változtatások:
+**Referencia érték**: Akció gombok `paddingVertical: 12`
+
+**Módosított elemek:**
+1. **Member Item** (sofőr lista elem):
+   - `padding: 16` → `paddingVertical: 12, paddingHorizontal: 16`
+   - Eredmény: Kompaktabb lista elemek
+
+2. **Location Header** (lila/kék sáv):
+   - `padding: 16` → `padding: 12`
+   - Eredmény: Alacsonyabb fejléc
+
+3. **Tab sáv** (Akadémia, Belváros, stb.):
+   - `paddingVertical: 12` (már jó volt, nem változott)
+
+4. **Subtab sáv** (Reptéri sor, Rendelések, Emirates):
+   - `paddingVertical: 12` (már jó volt, nem változott)
+
+### Módosított fájlok:
+- `src/screens/driver/LocationScreen.tsx` (Member Item, Location Header)
+- `src/screens/driver/DashboardScreen.tsx` (Tab sáv - ellenőrizve)
+- `src/screens/driver/AirportScreen.tsx` (Subtab sáv - ellenőrizve)
+
+---
+*Implementálva: 2025.12.13. 14:16*

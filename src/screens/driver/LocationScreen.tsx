@@ -648,7 +648,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: {
-    padding: 16,
+    padding: 12,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -661,7 +661,8 @@ const styles = StyleSheet.create({
   title: { fontWeight: 'bold' },
   count: { fontSize: 16, fontWeight: '600' },
   memberItem: {
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     marginHorizontal: 16,
     marginVertical: 4,
     borderRadius: 8,
