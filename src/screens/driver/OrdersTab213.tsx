@@ -185,7 +185,7 @@ export default function OrdersTab213() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#f3f4f6' },
+    container: { flex: 1 },
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
     header: { backgroundColor: '#4f46e5', paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center', position: 'relative' },
     headerText: { fontSize: 18, fontWeight: 'bold', color: '#ffffff' },
