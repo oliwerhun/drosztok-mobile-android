@@ -198,6 +198,6 @@ const styles = StyleSheet.create({
     noteRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', marginBottom: 8, borderRadius: 8, paddingVertical: 0, paddingHorizontal: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
     dragHandle: { paddingRight: 12, paddingVertical: 4 },
     dragIcon: { fontSize: 24, color: '#9ca3af' },
-    input: { flex: 1, fontSize: 16, color: '#1f2937', paddingVertical: 4 },
+    input: { flex: 1, fontSize: 16, fontWeight: 'bold', color: '#1f2937', paddingVertical: 4 },
     deleteButton: { paddingLeft: 12 },
 });
