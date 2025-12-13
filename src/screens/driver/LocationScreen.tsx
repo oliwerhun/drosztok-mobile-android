@@ -199,16 +199,22 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
   };
 
   // Auto-checkout if user leaves the zone
+  // Only runs for zones with geofence coordinates (like index.html)
   useEffect(() => {
+    // Skip auto-checkout if zone has no geofence coordinates (e.g., V-Osztály)
+    if (!GEOFENCED_LOCATIONS[resolvedGeofenceName]) {
+      return;
+    }
+
     if (gpsEnabled && isInsideZone === false && user && !loading && !checkingIn) {
       const isUserInList = members.some(m => m.uid === user.uid);
       if (isUserInList) {
-        console.log("Auto-checkout: User outside geofence");
+        console.log(`Auto-checkout: User outside geofence (${resolvedGeofenceName})`);
         handleCheckOut();
         Alert.alert("Figyelem", "Elhagytad a droszt területét, ezért kijelentkeztettünk.");
       }
     }
-  }, [isInsideZone, members, user, gpsEnabled, loading, checkingIn]);
+  }, [isInsideZone, members, user, gpsEnabled, loading, checkingIn, resolvedGeofenceName]);
 
   const handleFlameClick = async () => {
     if (!user || checkingIn) return;
