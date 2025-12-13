@@ -5,6 +5,7 @@ import { auth, db } from '../config/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Added AsyncStorage
 import { Alert } from 'react-native'; // Added Alert
 import { UserProfile } from '../types';
+import { checkoutFromAllLocations } from '../services/LocationService'; // Added for session mismatch
 
 interface AuthContextType {
   user: User | null;
@@ -70,7 +71,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // If local session exists but differs from remote, it means a newer login happened elsewhere
             if (localSessionId && localSessionId !== remoteSessionId) {
               console.log("Session Mismatch! Logging out.");
-              Alert.alert("Biztonsági Figyelmeztetés", "Bejelentkeztél egy másik eszközön. Ezen az eszközön kiléptettünk.");
+
+              // Checkout from all locations before logging out
+              await checkoutFromAllLocations(user.uid, data as UserProfile);
+
+              Alert.alert("Biztonsági Figyelmeztetés", "Bejelentkeztél egy másik eszközön. Ezen az eszközön kiléptettünk a sorból.");
               await signOut(auth);
               await AsyncStorage.removeItem('sessionId');
             }
