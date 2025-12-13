@@ -1748,3 +1748,46 @@ Emlékeztető a munkafolyamatról a hatékony együttműködéshez:
 
 ---
 *Frissítve: 2025.12.13. 12:35*
+
+## 2025.12.13. - Release APK Build (v1.0.23)
+
+### Build információk:
+- **Verzió**: v1.0.23_header_fix
+- **Build idő**: 36 másodperc
+- **APK helye**: `/Users/oliwer/build/Elitdroszt_v1.0.23_header_fix.apk`
+
+### Tartalmazza:
+- ✅ Fejléc UI javítás (Aa gombok, padding csökkentés)
+- ✅ Firebase google-services konfiguráció
+- ✅ Aktív sofőrök lista (FlatList)
+- ✅ Session management (single device)
+
+### Telepítés emulátorra:
+```bash
+adb install -r /Users/oliwer/build/Elitdroszt_v1.0.23_header_fix.apk
+```
+
+---
+*Build: 2025.12.13. 12:46*
+
+## 2025.12.13. - UI Terminológia Dokumentum
+
+### Cél:
+Egységes elnevezési rendszer kialakítása az app UI elemeihez, hogy a jövőben pontosan értsük egymást.
+
+### Létrehozott dokumentum:
+- **Fájl**: `ui_terminology.md` (artifacts mappában)
+- **Tartalom**: 
+  - Vizuális diagram (címkézett screenshot)
+  - Részletes elnevezések minden UI elemhez
+  - Példák a helyes kommunikációhoz
+
+### UI Elemek (fő kategóriák):
+1. **FEJLÉC (Header)** - Sofőr név, téma váltó, betűméret gombok, debug/logout
+2. **TAB SÁV** - Lokáció tabok (Akadémia, Belváros, stb.)
+3. **LOCATION HEADER** - Státusz ikon, location név, autók száma
+4. **SOFŐR LISTA** - Member item-ek, kick gomb
+5. **FOOTER / AKCIÓ GOMBOK** - Be, Ki, Láng, Food/Phone
+
+---
+*Dokumentálva: 2025.12.13. 13:20*
