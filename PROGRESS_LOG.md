@@ -2256,3 +2256,27 @@ Töröltem a hardcoded backgroundColor-t az összes rendelések tab StyleSheet-j
 
 ---
 *Implementálva: 2025.12.13. 15:59*
+
+## 2025.12.13. - Drag Handle (☰) Hozzáadása Member Item-hez
+
+### Változtatás:
+**Három vonal fogó (☰)** hozzáadva a Member Item elejére, **pontosan mint a rendeléseknél**:
+
+### Implementáció:
+1. **ScaleDecorator** wrapper hozzáadva
+2. **TouchableOpacity** drag handle (☰ szimbólum)
+3. **dragHandle** és **dragIcon** style-ok
+4. Csak **admin** számára látható
+
+### Használat (Admin):
+1. Nyomd meg hosszan a **☰** szimbólumot
+2. Húzd a sofőrt a kívánt pozícióba
+3. Engedd el - az új sorrend automatikusan mentődik
+
+### Módosított fájl:
+- `src/screens/driver/LocationScreen.tsx`
+  - renderItem: ScaleDecorator + drag handle
+  - styles: dragHandle, dragIcon
+
+---
+*Implementálva: 2025.12.13. 16:05*
