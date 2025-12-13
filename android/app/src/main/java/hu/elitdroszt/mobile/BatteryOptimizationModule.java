@@ -135,6 +135,8 @@ public class BatteryOptimizationModule extends ReactContextBaseJavaModule {
 
                 int bucket = usageStatsManager.getAppStandbyBucket();
 
+                android.util.Log.d("BatteryOptimization", "App Standby Bucket: " + bucket);
+
                 // Ha RESTRICTED bucket-ben van, akkor hibernálva van
                 boolean isHibernated = (bucket == 45); // STANDBY_BUCKET_RESTRICTED = 45
                 promise.resolve(isHibernated);
