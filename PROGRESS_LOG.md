@@ -2311,3 +2311,30 @@ await signOut(auth);
 
 ---
 *Implementálva: 2025.12.13. 16:17*
+
+## 2025.12.13. - Unused Apps Logika Javítás
+
+### Probléma:
+**PermissionGuard** harmadik oldal (Nem használt alkalmazások) logika **fordítva** volt:
+- Kapcsoló **ON** (szüneteltetés engedélyezve) → ✅ zöld pipa (OK) ❌ **ROSSZ**
+- Kapcsoló **OFF** (szüneteltetés kikapcsolva) → ❌ piros X (nem OK) ❌ **ROSSZ**
+
+### Megoldás:
+**isWhitelisted negálása**:
+```tsx
+// ELŐTTE:
+setUnusedAppsConfirmed(isWhitelisted);
+
+// UTÁNA:
+setUnusedAppsConfirmed(!isWhitelisted); // Negated: whitelisted = bad (app will be paused)
+```
+
+### Eredmény (HELYES):
+- Kapcsoló **ON** (szüneteltetés engedélyezve) → ❌ piros X (NEM jó, mert szünetelteti az appot)
+- Kapcsoló **OFF** (szüneteltetés kikapcsolva) → ✅ zöld pipa (OK, nem szünetelteti)
+
+### Módosított fájl:
+- `src/components/PermissionGuard.tsx`
+
+---
+*Implementálva: 2025.12.13. 16:23*
