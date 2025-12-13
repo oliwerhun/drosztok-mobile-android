@@ -58,6 +58,10 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
   // Track previous zone status for state transition detection (like index.html)
   const prevIsInsideZone = useRef<boolean | null>(null);
 
+  // Debounce auto-checkout: track when user first went outside
+  const outsideZoneSince = useRef<number | null>(null);
+  const AUTO_CHECKOUT_DELAY_MS = 10000; // 10 seconds outside before auto-checkout
+
   const insets = useSafeAreaInsets();
 
 
@@ -201,9 +205,10 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
     }
   };
 
-  // Auto-checkout if user leaves the zone
-  // Only runs for zones with geofence coordinates (like index.html)
-  // Tracks state transition: wasInside → isOutside (not just current isOutside)
+  // AUTO-CHECKOUT DISABLED - Causes instability and race conditions
+  // The index.html does NOT have per-component auto-checkout logic
+  // TODO: Implement global auto-checkout in GeofenceService if needed
+  /*
   useEffect(() => {
     // Skip auto-checkout if zone has no geofence coordinates (e.g., V-Osztály)
     if (!GEOFENCED_LOCATIONS[resolvedGeofenceName]) {
@@ -212,21 +217,42 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
     const wasInside = prevIsInsideZone.current;
     const isNowOutside = isInsideZone === false;
+    const isNowInside = isInsideZone === true;
 
-    // Only trigger auto-checkout on state transition: was INSIDE → now OUTSIDE
-    // This prevents false positives from GPS inaccuracy at startup
-    if (wasInside === true && isNowOutside && user && !loading && !checkingIn) {
-      const isUserInList = members.some(m => m.uid === user.uid);
-      if (isUserInList) {
-        console.log(`Auto-checkout: User left geofence (${resolvedGeofenceName}), was inside: ${wasInside}, now outside: ${isNowOutside}`);
+    // Reset debounce timer if user is back inside
+    if (isNowInside) {
+      outsideZoneSince.current = null;
+    }
+
+    // CRITICAL FIX: Only proceed if user is actually checked into THIS zone
+    const isUserInThisZone = user && members.some(m => m.uid === user.uid);
+    if (!isUserInThisZone) {
+      // User is not in this zone's queue, so don't auto-checkout
+      return;
+    }
+
+    // Start debounce timer on first detection of being outside
+    if (wasInside === true && isNowOutside && outsideZoneSince.current === null) {
+      outsideZoneSince.current = Date.now();
+      console.log(`User left zone ${resolvedGeofenceName}, starting ${AUTO_CHECKOUT_DELAY_MS / 1000}s debounce timer`);
+    }
+
+    // Check if user has been outside long enough
+    if (wasInside === true && isNowOutside && outsideZoneSince.current !== null) {
+      const timeOutside = Date.now() - outsideZoneSince.current;
+
+      if (timeOutside >= AUTO_CHECKOUT_DELAY_MS && !loading && !checkingIn) {
+        console.log(`Auto-checkout: User outside ${resolvedGeofenceName} for ${timeOutside / 1000}s, triggering checkout`);
         handleCheckOut();
         Alert.alert("Figyelem", "Elhagytad a droszt területét, ezért kijelentkeztettünk.");
+        outsideZoneSince.current = null; // Reset timer
       }
     }
 
     // Update previous state for next comparison
     prevIsInsideZone.current = isInsideZone;
   }, [isInsideZone, members, user, gpsEnabled, loading, checkingIn, resolvedGeofenceName]);
+  */
 
   const handleFlameClick = async () => {
     if (!user || checkingIn) return;
