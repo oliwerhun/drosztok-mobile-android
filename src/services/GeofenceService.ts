@@ -1,10 +1,11 @@
+import * as Location from 'expo-location';
+
 // Geofence polygon koordináták (7 taxiállomás)
 export interface GeofenceZone {
   polygon: Array<{ lat: number; lng: number }>;
-  isInside: boolean;
 }
 
-export const geofencedLocations: Record<string, GeofenceZone> = {
+export const GEOFENCED_LOCATIONS: Record<string, GeofenceZone> = {
   'Akadémia': {
     polygon: [
       { lat: 47.505695, lng: 19.049845 },
@@ -16,8 +17,7 @@ export const geofencedLocations: Record<string, GeofenceZone> = {
       { lat: 47.491865, lng: 19.050269 },
       { lat: 47.497717, lng: 19.046456 },
       { lat: 47.505254, lng: 19.044161 }
-    ],
-    isInside: false
+    ]
   },
   'Belváros': {
     polygon: [
@@ -30,8 +30,7 @@ export const geofencedLocations: Record<string, GeofenceZone> = {
       { lat: 47.489574, lng: 19.052048 },
       { lat: 47.492889, lng: 19.049281 },
       { lat: 47.493860, lng: 19.052686 }
-    ],
-    isInside: false
+    ]
   },
   'Conti': {
     polygon: [
@@ -46,8 +45,7 @@ export const geofencedLocations: Record<string, GeofenceZone> = {
       { lat: 47.495487, lng: 19.058537 },
       { lat: 47.497949, lng: 19.054250 },
       { lat: 47.501829, lng: 19.061152 }
-    ],
-    isInside: false
+    ]
   },
   'Budai': {
     polygon: [
@@ -70,8 +68,7 @@ export const geofencedLocations: Record<string, GeofenceZone> = {
       { lat: 47.512128, lng: 19.034074 },
       { lat: 47.516511, lng: 19.036055 },
       { lat: 47.517527, lng: 19.036123 }
-    ],
-    isInside: false
+    ]
   },
   'Crowne': {
     polygon: [
@@ -82,8 +79,7 @@ export const geofencedLocations: Record<string, GeofenceZone> = {
       { lat: 47.504976, lng: 19.047721 },
       { lat: 47.509246, lng: 19.044072 },
       { lat: 47.517785, lng: 19.047875 }
-    ],
-    isInside: false
+    ]
   },
   'Kozmo': {
     polygon: [
@@ -95,8 +91,7 @@ export const geofencedLocations: Record<string, GeofenceZone> = {
       { lat: 47.484232, lng: 19.075017 },
       { lat: 47.486569, lng: 19.074971 },
       { lat: 47.486615, lng: 19.067396 }
-    ],
-    isInside: false
+    ]
   },
   'Reptér': {
     polygon: [
@@ -108,8 +103,7 @@ export const geofencedLocations: Record<string, GeofenceZone> = {
       { lat: 47.415307, lng: 19.251631 },
       { lat: 47.415508, lng: 19.246541 },
       { lat: 47.417676, lng: 19.243253 }
-    ],
-    isInside: false
+    ]
   }
 };
 
@@ -139,14 +133,152 @@ export function isPointInPolygon(
   return isInside;
 }
 
-// Ellenőrzi hogy a user melyik zónában van
-export function checkUserInZones(
-  userLocation: { lat: number; lng: number }
-): string | null {
-  for (const [locationName, zone] of Object.entries(geofencedLocations)) {
-    if (isPointInPolygon(userLocation, zone.polygon)) {
-      return locationName;
+// Callback type for zone status changes
+type GeofenceCallback = (locationName: string, isInside: boolean) => void;
+
+/**
+ * Singleton GPS Tracking Service
+ * Maintains global geofence status for all zones and notifies subscribers of changes
+ */
+class GeofenceService {
+  private static instance: GeofenceService;
+  private locationSubscription: Location.LocationSubscription | null = null;
+  private zoneStatus: Record<string, boolean> = {};
+  private callbacks: GeofenceCallback[] = [];
+  private isTracking: boolean = false;
+
+  private constructor() {
+    // Initialize all zones as "outside" (false)
+    Object.keys(GEOFENCED_LOCATIONS).forEach(locationName => {
+      this.zoneStatus[locationName] = false;
+    });
+  }
+
+  public static getInstance(): GeofenceService {
+    if (!GeofenceService.instance) {
+      GeofenceService.instance = new GeofenceService();
+    }
+    return GeofenceService.instance;
+  }
+
+  /**
+   * Start continuous GPS tracking
+   * Should be called once on app launch
+   */
+  public async startTracking(): Promise<void> {
+    if (this.isTracking) {
+      console.log('GeofenceService: Already tracking');
+      return;
+    }
+
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.error('GeofenceService: Location permission denied');
+        return;
+      }
+
+      // Start continuous location tracking (matches index.html settings)
+      this.locationSubscription = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 5000,  // 5 seconds
+          distanceInterval: 10, // 10 meters
+        },
+        (location) => {
+          this.handleLocationUpdate(location);
+        }
+      );
+
+      this.isTracking = true;
+      console.log('GeofenceService: Started global GPS tracking');
+    } catch (error) {
+      console.error('GeofenceService: Error starting tracking', error);
     }
   }
-  return null;
+
+  /**
+   * Stop GPS tracking
+   * Should be called on app termination or logout
+   */
+  public stopTracking(): void {
+    if (this.locationSubscription) {
+      this.locationSubscription.remove();
+      this.locationSubscription = null;
+    }
+    this.isTracking = false;
+    console.log('GeofenceService: Stopped tracking');
+  }
+
+  /**
+   * Handle GPS position update
+   * Checks all zones and notifies subscribers of status changes
+   */
+  private handleLocationUpdate(location: Location.LocationObject): void {
+    const userPoint = {
+      lat: location.coords.latitude,
+      lng: location.coords.longitude,
+    };
+
+    // Check ALL geofenced locations (like index.html does)
+    Object.keys(GEOFENCED_LOCATIONS).forEach(locationName => {
+      const zone = GEOFENCED_LOCATIONS[locationName];
+      const wasInside = this.zoneStatus[locationName];
+      const isNowInside = isPointInPolygon(userPoint, zone.polygon);
+
+      // Update global status
+      this.zoneStatus[locationName] = isNowInside;
+
+      // Notify subscribers if status changed
+      if (wasInside !== isNowInside) {
+        console.log(`GeofenceService: ${locationName} status changed: ${isNowInside ? 'INSIDE' : 'OUTSIDE'}`);
+        this.notifyCallbacks(locationName, isNowInside);
+      }
+    });
+  }
+
+  /**
+   * Get current zone status
+   * @param locationName - Name of the location/zone
+   * @returns true if user is inside the zone, false otherwise
+   */
+  public getStatus(locationName: string): boolean {
+    return this.zoneStatus[locationName] || false;
+  }
+
+  /**
+   * Subscribe to zone status changes
+   * @param callback - Function to call when any zone status changes
+   * @returns Unsubscribe function
+   */
+  public subscribe(callback: GeofenceCallback): () => void {
+    this.callbacks.push(callback);
+    // Return unsubscribe function
+    return () => {
+      this.callbacks = this.callbacks.filter(cb => cb !== callback);
+    };
+  }
+
+  /**
+   * Notify all subscribers of a zone status change
+   */
+  private notifyCallbacks(locationName: string, isInside: boolean): void {
+    this.callbacks.forEach(callback => {
+      try {
+        callback(locationName, isInside);
+      } catch (error) {
+        console.error('GeofenceService: Error in callback', error);
+      }
+    });
+  }
+
+  /**
+   * Get tracking status
+   */
+  public isCurrentlyTracking(): boolean {
+    return this.isTracking;
+  }
 }
+
+// Export singleton instance
+export default GeofenceService.getInstance();
