@@ -2452,3 +2452,94 @@ A **Csillag** droszt (646-os felhasználónak) tesztelési célból megmaradt, G
 
 ---
 *Implementálva: 2025.12.13. 22:13*
+
+## 2025.12.13. - Random Auto-Checkout Bug Javítás (v1.0.60)
+
+### Probléma
+A GPS lokáció kezelés instabil volt - random kiléptetett a drosztokról, annak ellenére, hogy:
+- A felhasználó fizikailag a zónában volt
+- Zöld pipa (✅) látszott (rendszer szerint bent van)
+- Nem hagyta el a területet
+
+### Gyökérok Elemzése (index.html összehasonlítás)
+
+**Index.html helyes működése:**
+```javascript
+// watchPosition callback (1072-1119. sor)
+const wasInside = zone.isInside;  // Előző állapot
+const isNowInside = isPointInPolygon(userPoint, zone.polygon);
+
+if (wasInside !== isNowInside) {  // ÁLLAPOT VÁLTOZÁS
+    if (wasInside && !isNowInside) {  // VOLT bent → MOST kívül
+        checkOut(locationName);  // Csak ekkor léptet ki!
+    }
+}
+```
+
+**Mobil app hibás működése (v1.0.59-ig):**
+```tsx
+// Auto-checkout useEffect
+if (isInsideZone === false && user && !loading) {  // ❌ Csak aktuális érték
+    handleCheckOut();  // Kiléptet, ha kívül van (függetlenül az előző állapottól)
+}
+```
+
+### A Probléma Oka
+
+1. **GPS pontatlanság induláskor:**
+   - App indul → GeofenceService indul
+   - Első GPS pozíció: pontatlan/rossz → `isInsideZone = false`
+   - Auto-checkout fut → **KILÉPTET** (pedig sosem volt bent, csak a GPS pontatlan)
+   - 2-5 másodperc múlva GPS pontosodik → `isInsideZone = true` (zöld pipa)
+   - **De már késő**, mert már kiléptette a felhasználót
+
+2. **Hiányzó állapot átmenet követés:**
+   - Az index.html **állapot VÁLTOZÁST** figyel (`wasInside → isOutside`)
+   - A mobil app csak az **aktuális értéket** nézte (`isInsideZone === false`)
+
+### Megoldás
+
+**State Transition Tracking implementálása:**
+```tsx
+// Track previous zone status (like index.html)
+const prevIsInsideZone = useRef<boolean | null>(null);
+
+useEffect(() => {
+  const wasInside = prevIsInsideZone.current;
+  const isNowOutside = isInsideZone === false;
+
+  // Only trigger on transition: was INSIDE → now OUTSIDE
+  if (wasInside === true && isNowOutside && user && !loading) {
+    const isUserInList = members.some(m => m.uid === user.uid);
+    if (isUserInList) {
+      handleCheckOut();  // Csak állapot változáskor!
+    }
+  }
+
+  // Update previous state for next comparison
+  prevIsInsideZone.current = isInsideZone;
+}, [isInsideZone, members, user, loading, checkingIn]);
+```
+
+### Előnyök
+
+1. **GPS pontatlanság tolerancia:**
+   - Ha induláskor `isInsideZone = false` (pontatlan GPS), de `prevIsInsideZone = null`
+   - Feltétel: `wasInside === true` **NEM teljesül** → **NINCS kiléptetés**
+   - GPS pontosodik → `isInsideZone = true` → Minden rendben
+
+2. **Valódi zóna elhagyás detektálása:**
+   - Felhasználó bent van: `isInsideZone = true`, `prevIsInsideZone = true`
+   - Elhagyja a zónát: `isInsideZone = false`
+   - Feltétel: `wasInside === true && isNowOutside === true` **TELJESÜL**
+   - → **Jogos kiléptetés**
+
+3. **Megegyezik az index.html-lel:**
+   - Azonos logika: állapot átmenet követés
+   - Azonos stabilitás és megbízhatóság
+
+### Módosított fájl
+- `/src/screens/driver/LocationScreen.tsx` - State transition tracking hozzáadása
+
+---
+*Implementálva: 2025.12.13. 22:18*
