@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, KeyboardAvoidingView, FlatList } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useAuth } from '../../context/AuthContext';
@@ -54,6 +54,9 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
   const [checkingIn, setCheckingIn] = useState(false);
   const [isInsideZone, setIsInsideZone] = useState<boolean | null>(null);
   const [currentAddress, setCurrentAddress] = useState<string | null>(null);
+
+  // Track previous zone status for state transition detection (like index.html)
+  const prevIsInsideZone = useRef<boolean | null>(null);
 
   const insets = useSafeAreaInsets();
 
@@ -200,20 +203,29 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
   // Auto-checkout if user leaves the zone
   // Only runs for zones with geofence coordinates (like index.html)
+  // Tracks state transition: wasInside → isOutside (not just current isOutside)
   useEffect(() => {
     // Skip auto-checkout if zone has no geofence coordinates (e.g., V-Osztály)
     if (!GEOFENCED_LOCATIONS[resolvedGeofenceName]) {
       return;
     }
 
-    if (gpsEnabled && isInsideZone === false && user && !loading && !checkingIn) {
+    const wasInside = prevIsInsideZone.current;
+    const isNowOutside = isInsideZone === false;
+
+    // Only trigger auto-checkout on state transition: was INSIDE → now OUTSIDE
+    // This prevents false positives from GPS inaccuracy at startup
+    if (wasInside === true && isNowOutside && user && !loading && !checkingIn) {
       const isUserInList = members.some(m => m.uid === user.uid);
       if (isUserInList) {
-        console.log(`Auto-checkout: User outside geofence (${resolvedGeofenceName})`);
+        console.log(`Auto-checkout: User left geofence (${resolvedGeofenceName}), was inside: ${wasInside}, now outside: ${isNowOutside}`);
         handleCheckOut();
         Alert.alert("Figyelem", "Elhagytad a droszt területét, ezért kijelentkeztettünk.");
       }
     }
+
+    // Update previous state for next comparison
+    prevIsInsideZone.current = isInsideZone;
   }, [isInsideZone, members, user, gpsEnabled, loading, checkingIn, resolvedGeofenceName]);
 
   const handleFlameClick = async () => {
