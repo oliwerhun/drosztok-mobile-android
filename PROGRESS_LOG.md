@@ -2311,3 +2311,76 @@ await signOut(auth);
 
 ---
 *Implementálva: 2025.12.13. 16:17*
+
+## 2025.12.13. - Global GPS GeofenceService Implementation (v1.0.57)
+
+### Problem
+GPS zone detection became unstable during tab switching:
+- Each `LocationScreen` component started its own `watchPositionAsync`
+- Tab switching stopped the previous tracker and started a new one
+- This caused initialization delays and `isInsideZone` state loss
+- Zone status icons flickered or showed incorrect status
+
+### Root Cause
+**Mobile App (Broken)**:
+- Multiple GPS trackers (one per tab/LocationScreen)
+- Each tracker lifecycle tied to component mount/unmount
+- State (`isInsideZone`) was local to each component
+- Tab switching = tracker restart = delay + state loss
+
+**index.html (Reference - Working)**:
+- Single global `watchPosition` for entire app
+- Runs continuously regardless of tab changes
+- Global state object: `geofencedLocations[locationName].isInside`
+- Checks ALL zones in one loop on each position update
+
+### Solution
+Transformed `GeofenceService.ts` into a **Singleton GPS Tracking Service**:
+
+1. **Single GPS Tracker**: One `watchPositionAsync` for the entire app
+2. **Global State**: Tracks `isInside` status for ALL zones simultaneously
+3. **Event System**: Components subscribe to zone status changes
+4. **Lifecycle**: Starts on app launch, runs continuously
+
+### Implementation
+
+#### 1. GeofenceService.ts Refactor
+- Changed from static utilities to singleton class
+- Added `startTracking()` / `stopTracking()` lifecycle methods
+- Maintains `zoneStatus: Record<string, boolean>` for all zones
+- Provides `subscribe(callback)` for components to listen to changes
+- Checks ALL zones on each GPS update (like index.html)
+
+#### 2. LocationScreen.tsx Update
+- Removed local `watchPositionAsync` (lines 211-261)
+- Removed duplicate `GEOFENCED_LOCATIONS` and `isPointInPolygon` definitions
+- Now imports from `GeofenceService`
+- Subscribes to global service: `GeofenceService.subscribe()`
+- Gets initial status: `GeofenceService.getStatus(locationName)`
+
+#### 3. App.tsx Initialization
+- Added `useEffect` to start `GeofenceService.startTracking()` on app launch
+- Service runs continuously for entire app lifecycle
+- Cleanup on app termination
+
+### Benefits
+1. **Stability**: GPS tracker never restarts during tab switches
+2. **Performance**: Single tracker vs multiple trackers
+3. **Consistency**: Global state prevents race conditions
+4. **Accuracy**: No initialization delays on tab switch
+5. **Matches Web**: Same architecture as working index.html
+
+### Files Modified
+- `/src/services/GeofenceService.ts` - Singleton service implementation
+- `/src/screens/driver/LocationScreen.tsx` - Subscribe to global service
+- `/App.tsx` - Initialize service on app start
+
+### Testing
+1. Start app → GPS tracking starts automatically
+2. Check into a zone (e.g., Kozmo)
+3. Switch tabs rapidly → Zone status icon remains stable (no flickering)
+4. Walk out of zone → Status updates immediately
+5. Switch tabs while outside zone → "Be" button stays disabled correctly
+
+---
+*Implemented: 2025.12.13. 21:30*
