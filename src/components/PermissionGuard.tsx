@@ -391,13 +391,6 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                             <Text style={styles.mainButtonText}>Beállítások megnyitása</Text>
                         </TouchableOpacity>
 
-                        <View style={{ marginTop: 10, alignItems: 'center' }}>
-                            {unusedAppsConfirmed ? (
-                                <Text style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Rendszer szerint OK!</Text>
-                            ) : (
-                                <Text style={{ color: '#ef4444', fontSize: 12 }}>Rendszer szerint még be van kapcsolva</Text>
-                            )}
-                        </View>
 
                         <TouchableOpacity
                             style={[styles.nextButton, !unusedAppsConfirmed && styles.disabledButton]}
