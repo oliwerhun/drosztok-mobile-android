@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     addButton: { position: 'absolute', right: 16, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8, backgroundColor: '#ffffff', justifyContent: 'center', alignItems: 'center' },
     addButtonText: { fontSize: 20, color: '#000000', fontWeight: 'bold' },
     listContainer: { flex: 1, padding: 8 },
-    noteRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', marginBottom: 8, borderRadius: 8, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
+    noteRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', marginBottom: 8, borderRadius: 8, paddingVertical: 0, paddingHorizontal: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 },
     dragHandle: { paddingRight: 12, paddingVertical: 4 },
     dragIcon: { fontSize: 24, color: '#9ca3af' },
     input: { flex: 1, fontSize: 16, color: '#1f2937', paddingVertical: 4 },
