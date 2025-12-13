@@ -2135,3 +2135,25 @@ await Promise.all([
 
 ---
 *Implementálva: 2025.12.13. 15:06*
+
+## 2025.12.13. - Betűméret Gombok Átirányítása
+
+### Probléma:
+- Betűméret gombok (Aa) a Location Header betűméretét állították
+- Nem a Member Item (sofőr lista) betűméretét
+
+### Megoldás:
+1. **Location Header**: Fix 24px fontSize (nem változik)
+2. **Member Item**: Dinamikus fontSize (FontSizeContext)
+
+### Eredmény:
+- ✅ Aa gombok most a **Member Item** betűméretét állítják
+- ✅ Location Header fix méret marad
+
+### Módosított fájl:
+- `src/screens/driver/LocationScreen.tsx`
+  - Location Header: `fontSize: 24` (fix)
+  - Member Item: `fontSize: fontSize` (dinamikus)
+
+---
+*Implementálva: 2025.12.13. 15:12*
