@@ -2204,3 +2204,32 @@ Töröltem a hardcoded backgroundColor-t az összes rendelések tab StyleSheet-j
 
 ---
 *Implementálva: 2025.12.13. 15:47*
+
+## 2025.12.13. - Globális Betű Vastagítás
+
+### Változtatás:
+**fontWeight: 'bold'** hozzáadva minden szöveghez, ami még nem volt vastag:
+
+**Rendelések tabok:**
+- OrdersTab213: input
+- VClassOrdersTab: input
+- AirportOrdersTab: input
+
+**DashboardScreen:**
+- profileValue
+- input
+- pickerButtonText
+- pickerItemText
+
+### Eredmény:
+- ✅ Minden szöveg az appban most **vastag** (bold)
+- ✅ Egységes, olvashatóbb megjelenés
+
+### Módosított fájlok:
+- `src/screens/driver/OrdersTab213.tsx`
+- `src/screens/driver/VClassOrdersTab.tsx`
+- `src/screens/driver/AirportOrdersTab.tsx`
+- `src/screens/driver/DashboardScreen.tsx`
+
+---
+*Implementálva: 2025.12.13. 15:52*
