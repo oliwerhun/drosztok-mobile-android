@@ -203,7 +203,7 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
             appState.current = nextAppState;
         });
         return () => subscription.remove();
-    }, [checkPermissions]);
+    }, [checkPermissions, currentStep]);
 
     // Auto-checkout on Mock Location Detection
     useEffect(() => {
