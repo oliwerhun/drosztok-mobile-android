@@ -2123,3 +2123,15 @@ await Promise.all([
 
 ---
 *Implementálva: 2025.12.13. 14:56*
+
+## 2025.12.13. - Member Item Háttér = Szöveg Méret
+
+### Változtatás:
+- **Member Item padding eltávolítva**: `paddingVertical: 4 → 0`
+- **Eredmény**: A szürke doboz háttér pontosan akkora, mint a szöveg (nincs vertikális padding)
+
+### Módosított fájl:
+- `src/screens/driver/LocationScreen.tsx` - memberItem style
+
+---
+*Implementálva: 2025.12.13. 15:06*
