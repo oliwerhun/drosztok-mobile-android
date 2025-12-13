@@ -499,7 +499,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         ]}
       >
         <View style={styles.memberInfo}>
-          <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text }]}>
+          <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text, fontSize: fontSize }]}>
             {item.displayName || item.username}
             {item.checkInTime ? ` - ${item.checkInTime}` : ''}
           </Text>
@@ -543,7 +543,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
               <Ionicons name="ban" size={28} color="#ef4444" />
             ) : null
           )}
-          <Text style={[styles.title, { color: colors.headerText, fontSize: fontSize >= 20 ? 28 : 24 }]}>
+          <Text style={[styles.title, { color: colors.headerText, fontSize: 24 }]}>
             {locationName}
           </Text>
         </View>
