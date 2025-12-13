@@ -198,6 +198,18 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
     }
   };
 
+  // Auto-checkout if user leaves the zone
+  useEffect(() => {
+    if (gpsEnabled && isInsideZone === false && user && !loading && !checkingIn) {
+      const isUserInList = members.some(m => m.uid === user.uid);
+      if (isUserInList) {
+        console.log("Auto-checkout: User outside geofence");
+        handleCheckOut();
+        Alert.alert("Figyelem", "Elhagytad a droszt területét, ezért kijelentkeztettünk.");
+      }
+    }
+  }, [isInsideZone, members, user, gpsEnabled, loading, checkingIn]);
+
   const handleFlameClick = async () => {
     if (!user || checkingIn) return;
 

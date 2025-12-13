@@ -2312,75 +2312,72 @@ await signOut(auth);
 ---
 *Implementálva: 2025.12.13. 16:17*
 
-## 2025.12.13. - Global GPS GeofenceService Implementation (v1.0.57)
+## 2025.12.13. - Unused Apps Logika Javítás
 
-### Problem
-GPS zone detection became unstable during tab switching:
-- Each `LocationScreen` component started its own `watchPositionAsync`
-- Tab switching stopped the previous tracker and started a new one
-- This caused initialization delays and `isInsideZone` state loss
-- Zone status icons flickered or showed incorrect status
+### Probléma:
+**PermissionGuard** harmadik oldal (Nem használt alkalmazások) logika **fordítva** volt:
+- Kapcsoló **ON** (szüneteltetés engedélyezve) → ✅ zöld pipa (OK) ❌ **ROSSZ**
+- Kapcsoló **OFF** (szüneteltetés kikapcsolva) → ❌ piros X (nem OK) ❌ **ROSSZ**
 
-### Root Cause
-**Mobile App (Broken)**:
-- Multiple GPS trackers (one per tab/LocationScreen)
-- Each tracker lifecycle tied to component mount/unmount
-- State (`isInsideZone`) was local to each component
-- Tab switching = tracker restart = delay + state loss
+### Megoldás:
+**isWhitelisted negálása**:
+```tsx
+// ELŐTTE:
+setUnusedAppsConfirmed(isWhitelisted);
 
-**index.html (Reference - Working)**:
-- Single global `watchPosition` for entire app
-- Runs continuously regardless of tab changes
-- Global state object: `geofencedLocations[locationName].isInside`
-- Checks ALL zones in one loop on each position update
+// UTÁNA:
+setUnusedAppsConfirmed(!isWhitelisted); // Negated: whitelisted = bad (app will be paused)
+```
 
-### Solution
-Transformed `GeofenceService.ts` into a **Singleton GPS Tracking Service**:
+### Eredmény (HELYES):
+- Kapcsoló **ON** (szüneteltetés engedélyezve) → ❌ piros X (NEM jó, mert szünetelteti az appot)
+- Kapcsoló **OFF** (szüneteltetés kikapcsolva) → ✅ zöld pipa (OK, nem szünetelteti)
 
-1. **Single GPS Tracker**: One `watchPositionAsync` for the entire app
-2. **Global State**: Tracks `isInside` status for ALL zones simultaneously
-3. **Event System**: Components subscribe to zone status changes
-4. **Lifecycle**: Starts on app launch, runs continuously
-
-### Implementation
-
-#### 1. GeofenceService.ts Refactor
-- Changed from static utilities to singleton class
-- Added `startTracking()` / `stopTracking()` lifecycle methods
-- Maintains `zoneStatus: Record<string, boolean>` for all zones
-- Provides `subscribe(callback)` for components to listen to changes
-- Checks ALL zones on each GPS update (like index.html)
-
-#### 2. LocationScreen.tsx Update
-- Removed local `watchPositionAsync` (lines 211-261)
-- Removed duplicate `GEOFENCED_LOCATIONS` and `isPointInPolygon` definitions
-- Now imports from `GeofenceService`
-- Subscribes to global service: `GeofenceService.subscribe()`
-- Gets initial status: `GeofenceService.getStatus(locationName)`
-
-#### 3. App.tsx Initialization
-- Added `useEffect` to start `GeofenceService.startTracking()` on app launch
-- Service runs continuously for entire app lifecycle
-- Cleanup on app termination
-
-### Benefits
-1. **Stability**: GPS tracker never restarts during tab switches
-2. **Performance**: Single tracker vs multiple trackers
-3. **Consistency**: Global state prevents race conditions
-4. **Accuracy**: No initialization delays on tab switch
-5. **Matches Web**: Same architecture as working index.html
-
-### Files Modified
-- `/src/services/GeofenceService.ts` - Singleton service implementation
-- `/src/screens/driver/LocationScreen.tsx` - Subscribe to global service
-- `/App.tsx` - Initialize service on app start
-
-### Testing
-1. Start app → GPS tracking starts automatically
-2. Check into a zone (e.g., Kozmo)
-3. Switch tabs rapidly → Zone status icon remains stable (no flickering)
-4. Walk out of zone → Status updates immediately
-5. Switch tabs while outside zone → "Be" button stays disabled correctly
+### Módosított fájl:
+- `src/components/PermissionGuard.tsx`
 
 ---
-*Implemented: 2025.12.13. 21:30*
+*Implementálva: 2025.12.13. 16:23*
+
+## 2025.12.13. - Unused Apps Logika Végleges Javítás
+
+### Probléma:
+1. "Rendszer szerint OK" szöveg nem tűnt el
+2. Tovább gomb aktív volt, pedig a kapcsoló ON állásban volt
+
+### Megoldás:
+1. **"Rendszer szerint" szöveg törölve** (394-400. sor)
+2. **Fallback-ek módosítva**: `setUnusedAppsConfirmed(true)` → `setUnusedAppsConfirmed(false)`
+
+### Helyes logika (MOST):
+- Kapcsoló **ON** (szüneteltetés engedélyezve) → `isWhitelisted = true` → `!true = false` → Tovább gomb **DISABLED**
+- Kapcsoló **OFF** (szüneteltetés kikapcsolva) → `isWhitelisted = false` → `!false = true` → Tovább gomb **ENABLED**
+
+### Módosított fájl:
+- `src/components/PermissionGuard.tsx`
+
+---
+*Implementálva: 2025.12.13. 18:17*
+
+## 2025.12.13. - Unused Apps Logika VÉGSŐ JAVÍTÁS (v1.0.54)
+
+### Javított probléma:
+A korábbi verziókban a "PermissionGuard" Unused Apps (App Hibernation) ellenőrzése fordított logikát használt, vagy nem megfelelő API-t (`UsageStatsManager`).
+Az `isAutoRevokeWhitelisted` API valójában `true`-t ad vissza, ha a felhasználó KIKAPCSOLTA a korlátozást (whitelist-re tette az appot).
+
+### Megoldás:
+1.  **Visszaállás a helyes API-ra**: `UsageStatsManager` helyett újra `PackageManager.isAutoRevokeWhitelisted()` (ez az egyetlen, ami pontosan ezt a kapcsolót nézi).
+2.  **Logika javítása**: A `PermissionGuard.tsx`-ben törölve lett a negálás (`!`).
+    *   `isWhitelisted = true` => Kapcsoló OFF (JÓ) => Tovább gomb AKTÍV.
+    *   `isWhitelisted = false` => Kapcsoló ON (ROSSZ) => Tovább gomb INAKTÍV.
+3.  **UI egyszerűsítés**: Eltávolítva a manuális "Megerősítem" gomb, mivel az automatikus detektálás most már helyesen fog működni. Eltávolítva a "Rendszer szerint..." zavaró feliratok.
+
+### Teszteléshez:
+1.  Telepítsd az appot.
+2.  Menj az "Unused apps" oldalra. Ha alapból ON a kapcsoló, a "Tovább" gomb inaktív.
+3.  Kattints a "Beállítások megnyitása" gombra.
+4.  Kapcsold **OFF**-ra (szürkére) az "App szüneteltetése..." kapcsolót.
+5.  Lépj vissza az appba. A gombnak **automatikusan** aktívvá kell válnia.
+
+---
+*Implementálva: 2025.12.13. 20:45*
