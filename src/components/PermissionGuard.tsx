@@ -146,14 +146,14 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                         setUnusedAppsConfirmed(!isWhitelisted); // Negated: whitelisted = bad (app will be paused)
                     } else {
                         // Fallback for older builds without this method
-                        setUnusedAppsConfirmed(true);
+                        setUnusedAppsConfirmed(false); // Default: disabled
                     }
                 } catch (e) {
                     console.log('Unused apps check failed', e);
-                    setUnusedAppsConfirmed(true);
+                    setUnusedAppsConfirmed(false); // Default: disabled
                 }
             } else {
-                setUnusedAppsConfirmed(true);
+                setUnusedAppsConfirmed(false); // iOS or no module: disabled
             }
 
             // If Mocked (and LOCKED) -> Block
