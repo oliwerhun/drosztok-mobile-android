@@ -2084,3 +2084,29 @@ await Promise.all([
 
 ---
 *Implementálva: 2025.12.13. 14:52*
+
+## 2025.12.13. - Release APK v1.0.30 (Compact Items)
+
+### Build információk:
+- **Verzió**: v1.0.30_compact_items
+- **Build idő**: 21 másodperc
+- **APK helye**: `/Users/oliwer/build/Elitdroszt_v1.0.30_compact_items.apk`
+- **Telepítve**: Oppo telefon (77536d6)
+
+### Tartalmazza:
+1. **Member Item Háttér Méret Csökkentés**:
+   - paddingVertical: 12 → 8
+   - Kompaktabb lista elemek
+   - Háttér csak akkora, mint a szöveg + kis margó
+   - Lekerekített sarkok (borderRadius: 8)
+
+2. **Korábbi optimalizációk**:
+   - Race condition javítás (excludeLocation)
+   - Promise.all párhuzamosítás (szupergyors check-in)
+   - Instant UI (gombok azonnal megjelennek)
+   - V-Osztály UI egyszerűsítés
+   - GPS zónák
+   - Betűméret gombok (Member Item-ekre)
+
+---
+*Build és telepítés: 2025.12.13. 14:53*
