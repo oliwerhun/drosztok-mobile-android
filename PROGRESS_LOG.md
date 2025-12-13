@@ -2543,3 +2543,61 @@ useEffect(() => {
 
 ---
 *Implementálva: 2025.12.13. 22:18*
+
+## 2025.12.13. - Auto-Checkout KIKAPCSOLVA (v1.0.63)
+
+### Probléma
+Az automatikus kiléptetés teljesen instabil volt:
+- Random kiléptetés annak ellenére, hogy fizikailag bent van a zónában
+- Tab váltáskor kiléptetés
+- Zöld pipa (✅) látszik, de mégis kiléptet
+
+### Gyökérok Elemzése
+
+**Index.html működése:**
+- **EGYETLEN** globális `watchPosition` fut
+- **MINDEN** zónát ellenőriz egy ciklusban
+- **NINCS** komponens-szintű auto-checkout logika
+- Állapot változáskor (`wasInside !== isNowInside`) lekéri a Firebase members listát
+- Csak akkor léptet ki, ha a user benne van a listában
+
+**Mobil app hibás működése:**
+- **MINDEN LocationScreen komponens** külön auto-checkout useEffect-et futtat
+- **RACE CONDITION**: Több komponens egyszerre próbál kiléptetni
+- **DUPLIKÁLT LOGIKA**: Ugyanaz a logika fut 7+ helyen párhuzamosan
+- **STATE CONFUSION**: Minden komponens saját `prevIsInsideZone` ref-fel rendelkezik
+
+### Döntés
+
+**KIKAPCSOLTAM** az auto-checkout-ot a LocationScreen-ben:
+- Kommentbe tettem az egész useEffect-et
+- TODO: Implementálni kell globálisan a GeofenceService-ben (ha szükséges)
+
+### Indoklás
+
+1. **Index.html nem használ komponens-szintű logikát**
+   - Egyetlen globális watcher van
+   - Nincs per-tab/per-component auto-checkout
+
+2. **Race condition elkerülése**
+   - Több komponens egyszerre fut
+   - Mindegyik próbál kiléptetni
+   - Instabilitást okoz
+
+3. **Stabilitás prioritás**
+   - Jobb ha NINCS auto-checkout, mint ha ROSSZ auto-checkout van
+   - A felhasználó manuálisan kiléphet (Ki gomb)
+
+### Következő lépések (opcionális)
+
+Ha szükséges auto-checkout:
+1. Implementálni a GeofenceService-ben (globálisan, mint index.html)
+2. Egy helyen fut, nem komponensenként
+3. Firebase lekérdezés minden zónára állapot változáskor
+4. Kiléptetés csak akkor, ha user benne van a listában
+
+### Módosított fájl
+- `/src/screens/driver/LocationScreen.tsx` - Auto-checkout useEffect kikommentelve
+
+---
+*Implementálva: 2025.12.13. 22:38*
