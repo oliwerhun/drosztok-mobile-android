@@ -2157,3 +2157,29 @@ await Promise.all([
 
 ---
 *Implementálva: 2025.12.13. 15:12*
+
+## 2025.12.13. - Theme Flash Javítás (Rendelések Tabok)
+
+### Probléma:
+- Rendelések tabokra váltáskor villan a képernyő
+- Először fehér háttér, majd gyorsan sötétre vált (sötét módban)
+- **Ok**: Hardcoded `backgroundColor: '#f3f4f6'` a StyleSheet-ben
+
+### Megoldás:
+Töröltem a hardcoded backgroundColor-t az összes rendelések tab StyleSheet-jéből:
+- `OrdersTab213.tsx`: `container: { flex: 1 }` (backgroundColor törölve)
+- `VClassOrdersTab.tsx`: `container: { flex: 1 }` (backgroundColor törölve)
+- `AirportOrdersTab.tsx`: `container: { flex: 1 }` (backgroundColor törölve)
+
+### Eredmény:
+- ✅ **Nincs theme flash** - a háttér azonnal a helyes színnel jelenik meg
+- ✅ **Sötét módban** azonnal sötét háttér
+- ✅ **Világos módban** azonnal világos háttér
+
+### Módosított fájlok:
+- `src/screens/driver/OrdersTab213.tsx`
+- `src/screens/driver/VClassOrdersTab.tsx`
+- `src/screens/driver/AirportOrdersTab.tsx`
+
+---
+*Implementálva: 2025.12.13. 15:22*
