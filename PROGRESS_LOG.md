@@ -2338,3 +2338,23 @@ setUnusedAppsConfirmed(!isWhitelisted); // Negated: whitelisted = bad (app will 
 
 ---
 *Implementálva: 2025.12.13. 16:23*
+
+## 2025.12.13. - Unused Apps Logika Végleges Javítás
+
+### Probléma:
+1. "Rendszer szerint OK" szöveg nem tűnt el
+2. Tovább gomb aktív volt, pedig a kapcsoló ON állásban volt
+
+### Megoldás:
+1. **"Rendszer szerint" szöveg törölve** (394-400. sor)
+2. **Fallback-ek módosítva**: `setUnusedAppsConfirmed(true)` → `setUnusedAppsConfirmed(false)`
+
+### Helyes logika (MOST):
+- Kapcsoló **ON** (szüneteltetés engedélyezve) → `isWhitelisted = true` → `!true = false` → Tovább gomb **DISABLED**
+- Kapcsoló **OFF** (szüneteltetés kikapcsolva) → `isWhitelisted = false` → `!false = true` → Tovább gomb **ENABLED**
+
+### Módosított fájl:
+- `src/components/PermissionGuard.tsx`
+
+---
+*Implementálva: 2025.12.13. 18:17*
