@@ -137,27 +137,28 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                 setIsBatteryWhitelisted(true); // iOS or no module
             }
 
-            // 5. Unused Apps Check (App Hibernation) - NEW
+            // 5. Unused Apps Check (Auto Revoke) - CORRECT LOGIC
             if (Platform.OS === 'android' && BatteryOptimization) {
                 try {
-                    // Check if method exists (might be old native build in dev)
-                    if (BatteryOptimization.isAppHibernationEnabled) {
-                        const isHibernated = await BatteryOptimization.isAppHibernationEnabled();
-                        console.log('🔍 isAppHibernationEnabled:', isHibernated);
-                        console.log('🔍 unusedAppsConfirmed will be:', !isHibernated);
-                        setUnusedAppsConfirmed(!isHibernated); // Negated: hibernated = bad (app will be paused)
+                    // Check if method exists
+                    if (BatteryOptimization.isAutoRevokeWhitelisted) {
+                        const isWhitelisted = await BatteryOptimization.isAutoRevokeWhitelisted();
+                        console.log('🔍 isAutoRevokeWhitelisted:', isWhitelisted);
+                        // LOGIC FIX:
+                        // isWhitelisted = TRUE  => Restriction is OFF (User Disabled it) => GOOD => setUnusedAppsConfirmed(true)
+                        // isWhitelisted = FALSE => Restriction is ON (Default)          => BAD  => setUnusedAppsConfirmed(false)
+                        setUnusedAppsConfirmed(isWhitelisted);
                     } else {
-                        console.log('⚠️ isAppHibernationEnabled method not found');
-                        // Fallback for older builds without this method
-                        setUnusedAppsConfirmed(false); // Default: disabled
+                        // Fallback for older builds / OS without this feature -> Assume OK
+                        setUnusedAppsConfirmed(true);
                     }
                 } catch (e) {
                     console.log('❌ Unused apps check failed', e);
-                    setUnusedAppsConfirmed(false); // Default: disabled
+                    // On error, let them pass to avoid blocking
+                    setUnusedAppsConfirmed(true);
                 }
             } else {
-                console.log('⚠️ iOS or no BatteryOptimization module');
-                setUnusedAppsConfirmed(false); // iOS or no module: disabled
+                setUnusedAppsConfirmed(true); // iOS or no module: OK
             }
 
             // If Mocked (and LOCKED) -> Block
@@ -393,14 +394,7 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                             <Text style={styles.mainButtonText}>Beállítások megnyitása</Text>
                         </TouchableOpacity>
 
-                        {!unusedAppsConfirmed && (
-                            <TouchableOpacity
-                                style={[styles.mainButton, { backgroundColor: '#10b981', marginTop: 10 }]}
-                                onPress={() => setUnusedAppsConfirmed(true)}
-                            >
-                                <Text style={styles.mainButtonText}>Megerősítem, OFF-ra állítottam</Text>
-                            </TouchableOpacity>
-                        )}
+
 
                         <TouchableOpacity
                             style={[styles.nextButton, !unusedAppsConfirmed && styles.disabledButton]}
