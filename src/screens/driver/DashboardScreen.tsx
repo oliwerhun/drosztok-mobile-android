@@ -25,6 +25,7 @@ export default function DashboardScreen({ navigation }: any) {
   const { increaseFontSize, decreaseFontSize } = useFontSize();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('Akadémia');
+  const [headerFontSize, setHeaderFontSize] = useState(20); // Fejléc betűméret
 
   // Profile Edit State
   const [editLicensePlate, setEditLicensePlate] = useState('');
@@ -322,7 +323,7 @@ export default function DashboardScreen({ navigation }: any) {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: colors.headerBackground }]}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, { color: colors.headerText }]}>
+          <Text style={[styles.headerTitle, { color: colors.headerText, fontSize: headerFontSize }]}>
             {userProfile?.username || 'N/A'}
           </Text>
         </View>
@@ -333,10 +334,10 @@ export default function DashboardScreen({ navigation }: any) {
           </TouchableOpacity>
 
           <View style={styles.fontControls}>
-            <TouchableOpacity onPress={decreaseFontSize} style={styles.iconButton}>
+            <TouchableOpacity onPress={() => setHeaderFontSize(prev => Math.max(14, prev - 2))} style={styles.iconButton}>
               <Ionicons name="text" size={18} color={colors.headerText} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={increaseFontSize} style={styles.iconButton}>
+            <TouchableOpacity onPress={() => setHeaderFontSize(prev => Math.min(28, prev + 2))} style={styles.iconButton}>
               <Ionicons name="text" size={24} color={colors.headerText} />
             </TouchableOpacity>
           </View>
@@ -386,7 +387,7 @@ export default function DashboardScreen({ navigation }: any) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
-  header: { backgroundColor: '#1f2937', paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: { backgroundColor: '#1f2937', paddingHorizontal: 16, paddingVertical: 6, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   headerLeft: { minWidth: 60 },
   headerCenter: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerRight: { minWidth: 40, alignItems: 'flex-end' },

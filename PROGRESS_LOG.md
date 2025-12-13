@@ -1727,3 +1727,24 @@ Emlékeztető a munkafolyamatról a hatékony együttműködéshez:
 
 ---
 *Utolsó frissítés: 2025.12.13.*
+
+## 2025.12.13. - Fejléc UI Javítás
+
+### Változtatások:
+1. **Betűméret vezérlő (Aa gombok)**:
+   - A fejlécben lévő Aa gombok most a bejelentkezett sofőr nevének betűméretét állítják
+   - Tartomány: 14px - 28px (2px lépésekkel)
+   - Korábban: a LocationScreen betűméretét állították (ez nem volt intuitív)
+
+2. **Fejléc padding csökkentése**:
+   - `paddingVertical` csökkentve: 12px → 6px
+   - Eredmény: kompaktabb fejléc, kevesebb margó a sofőr adatok sor körül
+
+### Módosított fájlok:
+- `src/screens/driver/DashboardScreen.tsx`
+  - Új state: `headerFontSize` (alapértelmezett: 20px)
+  - Gombok logikája átírva: `setHeaderFontSize(prev => Math.max/min(...))`
+  - Stílus frissítve: `header.paddingVertical: 6`
+
+---
+*Frissítve: 2025.12.13. 12:35*
