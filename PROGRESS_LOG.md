@@ -2358,3 +2358,26 @@ setUnusedAppsConfirmed(!isWhitelisted); // Negated: whitelisted = bad (app will 
 
 ---
 *Implementálva: 2025.12.13. 18:17*
+
+## 2025.12.13. - Unused Apps Logika VÉGSŐ JAVÍTÁS (v1.0.54)
+
+### Javított probléma:
+A korábbi verziókban a "PermissionGuard" Unused Apps (App Hibernation) ellenőrzése fordított logikát használt, vagy nem megfelelő API-t (`UsageStatsManager`).
+Az `isAutoRevokeWhitelisted` API valójában `true`-t ad vissza, ha a felhasználó KIKAPCSOLTA a korlátozást (whitelist-re tette az appot).
+
+### Megoldás:
+1.  **Visszaállás a helyes API-ra**: `UsageStatsManager` helyett újra `PackageManager.isAutoRevokeWhitelisted()` (ez az egyetlen, ami pontosan ezt a kapcsolót nézi).
+2.  **Logika javítása**: A `PermissionGuard.tsx`-ben törölve lett a negálás (`!`).
+    *   `isWhitelisted = true` => Kapcsoló OFF (JÓ) => Tovább gomb AKTÍV.
+    *   `isWhitelisted = false` => Kapcsoló ON (ROSSZ) => Tovább gomb INAKTÍV.
+3.  **UI egyszerűsítés**: Eltávolítva a manuális "Megerősítem" gomb, mivel az automatikus detektálás most már helyesen fog működni. Eltávolítva a "Rendszer szerint..." zavaró feliratok.
+
+### Teszteléshez:
+1.  Telepítsd az appot.
+2.  Menj az "Unused apps" oldalra. Ha alapból ON a kapcsoló, a "Tovább" gomb inaktív.
+3.  Kattints a "Beállítások megnyitása" gombra.
+4.  Kapcsold **OFF**-ra (szürkére) az "App szüneteltetése..." kapcsolót.
+5.  Lépj vissza az appba. A gombnak **automatikusan** aktívvá kell válnia.
+
+---
+*Implementálva: 2025.12.13. 20:45*
