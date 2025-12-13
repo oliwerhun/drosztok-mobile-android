@@ -125,27 +125,4 @@ public class BatteryOptimizationModule extends ReactContextBaseJavaModule {
             }
         }
     }
-
-    @ReactMethod
-    public void isAppHibernationEnabled(Promise promise) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { // API 31 Android 12
-                android.app.usage.UsageStatsManager usageStatsManager = (android.app.usage.UsageStatsManager) reactContext
-                        .getSystemService(Context.USAGE_STATS_SERVICE);
-
-                int bucket = usageStatsManager.getAppStandbyBucket();
-
-                android.util.Log.d("BatteryOptimization", "App Standby Bucket: " + bucket);
-
-                // Ha RESTRICTED bucket-ben van, akkor hibernálva van
-                boolean isHibernated = (bucket == 45); // STANDBY_BUCKET_RESTRICTED = 45
-                promise.resolve(isHibernated);
-            } else {
-                // Older versions don't have this feature
-                promise.resolve(false);
-            }
-        } catch (Exception e) {
-            promise.reject("ERROR", e.getMessage());
-        }
-    }
 }

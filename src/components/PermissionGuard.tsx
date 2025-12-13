@@ -137,28 +137,23 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                 setIsBatteryWhitelisted(true); // iOS or no module
             }
 
-            // 5. Unused Apps Check (Auto Revoke) - CORRECT LOGIC
+            // 5. Unused Apps Check (Auto Revoke) - NEW
             if (Platform.OS === 'android' && BatteryOptimization) {
                 try {
-                    // Check if method exists
+                    // Check if method exists (might be old native build in dev)
                     if (BatteryOptimization.isAutoRevokeWhitelisted) {
                         const isWhitelisted = await BatteryOptimization.isAutoRevokeWhitelisted();
-                        console.log('🔍 isAutoRevokeWhitelisted:', isWhitelisted);
-                        // LOGIC FIX:
-                        // isWhitelisted = TRUE  => Restriction is OFF (User Disabled it) => GOOD => setUnusedAppsConfirmed(true)
-                        // isWhitelisted = FALSE => Restriction is ON (Default)          => BAD  => setUnusedAppsConfirmed(false)
                         setUnusedAppsConfirmed(isWhitelisted);
                     } else {
-                        // Fallback for older builds / OS without this feature -> Assume OK
+                        // Fallback for older builds without this method
                         setUnusedAppsConfirmed(true);
                     }
                 } catch (e) {
-                    console.log('❌ Unused apps check failed', e);
-                    // On error, let them pass to avoid blocking
+                    console.log('Unused apps check failed', e);
                     setUnusedAppsConfirmed(true);
                 }
             } else {
-                setUnusedAppsConfirmed(true); // iOS or no module: OK
+                setUnusedAppsConfirmed(true);
             }
 
             // If Mocked (and LOCKED) -> Block
@@ -200,11 +195,13 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
         const subscription = AppState.addEventListener('change', nextAppState => {
             if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
                 checkPermissions();
+                // "Unused Apps" - Mivel nincs egzakt API, feltételezzük, hogy megcsinálta, ha visszatér a beállításokból
+                checkPermissions();
             }
             appState.current = nextAppState;
         });
         return () => subscription.remove();
-    }, [checkPermissions, currentStep]);
+    }, [checkPermissions]);
 
     // Auto-checkout on Mock Location Detection
     useEffect(() => {
@@ -394,7 +391,13 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                             <Text style={styles.mainButtonText}>Beállítások megnyitása</Text>
                         </TouchableOpacity>
 
-
+                        <View style={{ marginTop: 10, alignItems: 'center' }}>
+                            {unusedAppsConfirmed ? (
+                                <Text style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Rendszer szerint OK!</Text>
+                            ) : (
+                                <Text style={{ color: '#ef4444', fontSize: 12 }}>Rendszer szerint még be van kapcsolva</Text>
+                            )}
+                        </View>
 
                         <TouchableOpacity
                             style={[styles.nextButton, !unusedAppsConfirmed && styles.disabledButton]}
@@ -419,6 +422,14 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                         <TouchableOpacity style={styles.mainButton} onPress={handleBatteryAction}>
                             <Text style={styles.mainButtonText}>Beállítások megnyitása</Text>
                         </TouchableOpacity>
+
+                        <View style={{ marginTop: 10, alignItems: 'center' }}>
+                            {isBatteryWhitelisted ? (
+                                <Text style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Rendszer szerint OK!</Text>
+                            ) : (
+                                <Text style={{ color: '#ef4444', fontSize: 12 }}>Rendszer szerint még korlátozva van</Text>
+                            )}
+                        </View>
 
                         <TouchableOpacity
                             style={[styles.nextButton, !isBatteryWhitelisted && styles.disabledButton]}
