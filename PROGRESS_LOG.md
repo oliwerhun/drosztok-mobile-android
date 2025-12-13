@@ -2233,3 +2233,26 @@ Töröltem a hardcoded backgroundColor-t az összes rendelések tab StyleSheet-j
 
 ---
 *Implementálva: 2025.12.13. 15:52*
+
+## 2025.12.13. - Member Item Drag and Drop (Admin)
+
+### Változtatás:
+**Member Item drag and drop** implementálva admin számára:
+- Admin: **DraggableFlatList** (drag and drop működik)
+- User: **FlatList** (csak olvasható)
+
+### Implementáció:
+- `LocationScreen.tsx`: FlatList → DraggableFlatList (admin részben)
+- `onDragEnd` handler: `handleDragEnd(data)` - Firebase-be menti az új sorrendet
+- `renderItem`: már fel volt készítve drag-ra (`onLongPress={drag}`)
+
+### Eredmény:
+- ✅ **Admin** hosszan nyomva mozgathatja a sofőröket a listában
+- ✅ **User** nem tud mozgatni (disabled)
+- ✅ Új sorrend automatikusan mentődik Firebase-be
+
+### Módosított fájl:
+- `src/screens/driver/LocationScreen.tsx`
+
+---
+*Implementálva: 2025.12.13. 15:59*
