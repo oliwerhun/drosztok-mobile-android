@@ -2183,3 +2183,24 @@ Töröltem a hardcoded backgroundColor-t az összes rendelések tab StyleSheet-j
 
 ---
 *Implementálva: 2025.12.13. 15:22*
+
+## 2025.12.13. - Rendelési Sor Méret Egységesítés
+
+### Változtatás:
+**noteRow** (rendelési oldal szerkeszthető sor) méretének egységesítése a **Member Item** méretével:
+- `padding: 12` → `paddingVertical: 0, paddingHorizontal: 12`
+
+### Módosított fájlok:
+- `src/screens/driver/OrdersTab213.tsx`
+- `src/screens/driver/VClassOrdersTab.tsx`
+- `src/screens/driver/AirportOrdersTab.tsx`
+
+### Eredmény:
+- ✅ noteRow pontosan akkora, mint a Member Item
+- ✅ Betűméret növelő továbbra is működik (fontSize dinamikus)
+
+### Megjegyzés:
+- **Villogás probléma**: Még mindig van villogás a rendelések tab váltáskor (további vizsgálat szükséges)
+
+---
+*Implementálva: 2025.12.13. 15:47*
