@@ -143,7 +143,7 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                     // Check if method exists (might be old native build in dev)
                     if (BatteryOptimization.isAutoRevokeWhitelisted) {
                         const isWhitelisted = await BatteryOptimization.isAutoRevokeWhitelisted();
-                        setUnusedAppsConfirmed(isWhitelisted);
+                        setUnusedAppsConfirmed(!isWhitelisted); // Negated: whitelisted = bad (app will be paused)
                     } else {
                         // Fallback for older builds without this method
                         setUnusedAppsConfirmed(true);
