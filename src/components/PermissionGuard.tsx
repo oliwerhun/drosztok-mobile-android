@@ -143,16 +143,20 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                     // Check if method exists (might be old native build in dev)
                     if (BatteryOptimization.isAppHibernationEnabled) {
                         const isHibernated = await BatteryOptimization.isAppHibernationEnabled();
+                        console.log('🔍 isAppHibernationEnabled:', isHibernated);
+                        console.log('🔍 unusedAppsConfirmed will be:', !isHibernated);
                         setUnusedAppsConfirmed(!isHibernated); // Negated: hibernated = bad (app will be paused)
                     } else {
+                        console.log('⚠️ isAppHibernationEnabled method not found');
                         // Fallback for older builds without this method
                         setUnusedAppsConfirmed(false); // Default: disabled
                     }
                 } catch (e) {
-                    console.log('Unused apps check failed', e);
+                    console.log('❌ Unused apps check failed', e);
                     setUnusedAppsConfirmed(false); // Default: disabled
                 }
             } else {
+                console.log('⚠️ iOS or no BatteryOptimization module');
                 setUnusedAppsConfirmed(false); // iOS or no module: disabled
             }
 
