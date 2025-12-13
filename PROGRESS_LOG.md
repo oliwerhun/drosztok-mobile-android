@@ -1855,3 +1855,48 @@ Minden sáv magasságának egységesítése az akció gombok magasságára (Be, 
 
 ---
 *Implementálva: 2025.12.13. 14:16*
+
+## 2025.12.13. - Release APK v1.0.25 (UI Compact)
+
+### Build információk:
+- **Verzió**: v1.0.25_ui_compact
+- **Build idő**: 23 másodperc
+- **APK helye**: `/Users/oliwer/build/Elitdroszt_v1.0.25_ui_compact.apk`
+- **Telepítve**: Oppo telefon (77536d6)
+
+### Tartalmazza:
+1. **UI Magasság Egységesítés**:
+   - Minden sáv `paddingVertical: 12` (akció gombok mérete)
+   - Member Item: kompaktabb (padding csökkentve)
+   - Location Header: alacsonyabb (padding csökkentve)
+   - Tab sáv és Subtab sáv: ellenőrizve (már jó volt)
+
+2. **Korábbi javítások**:
+   - Betűméret gombok (Member Item-ekre)
+   - GPS zónák (Belváros, Conti, Budai, Crowne, Kozmo, Reptér)
+
+---
+*Build és telepítés: 2025.12.13. 14:18*
+
+## 2025.12.13. - V-Osztály UI Egyszerűsítés
+
+### Változtatások:
+
+**1. Üres lista szöveg törlése:**
+- "Nincs bejelentkezett autós" szöveg eltávolítva
+- Üres lista esetén nem jelenik meg semmi (tiszta felület)
+
+**2. V-Osztály oldal egyszerűsítése:**
+- **Státusz ikon eltávolítva**: Nincs zöld pipa/piros tiltó ikon
+- **Akció gombok eltávolítva**: Nincs Be, Ki, Láng, Food/Phone gomb
+- **Location Header megmaradt**: Továbbra is látszik a "V-Osztály" fejléc és az autók száma
+- **Indoklás**: V-Osztály sofőrök automatikusan bekerülnek más sorokból
+
+### Módosított fájl:
+- `src/screens/driver/LocationScreen.tsx`
+  - ListEmptyComponent törölve (admin és user FlatList-ből)
+  - Státusz ikon feltételes renderelés: `locationName !== 'V-Osztály'`
+  - Footer gombok feltételes renderelés: `locationName !== 'V-Osztály'`
+
+---
+*Implementálva: 2025.12.13. 14:24*

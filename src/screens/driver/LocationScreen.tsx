@@ -536,11 +536,13 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
       <View style={[styles.header, { backgroundColor: colors.locationHeader }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          {isInsideZone === true ? (
-            <Ionicons name="checkmark-circle" size={28} color="#10b981" />
-          ) : isInsideZone === false ? (
-            <Ionicons name="ban" size={28} color="#ef4444" />
-          ) : null}
+          {locationName !== 'V-Osztály' && (
+            isInsideZone === true ? (
+              <Ionicons name="checkmark-circle" size={28} color="#10b981" />
+            ) : isInsideZone === false ? (
+              <Ionicons name="ban" size={28} color="#ef4444" />
+            ) : null
+          )}
           <Text style={[styles.title, { color: colors.headerText, fontSize: fontSize >= 20 ? 28 : 24 }]}>
             {locationName}
           </Text>
@@ -560,11 +562,6 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
             data={members}
             keyExtractor={(item) => item.uid}
             renderItem={({ item }) => renderItem({ item, drag: () => { }, isActive: false } as any)}
-            ListEmptyComponent={
-              <View style={{ padding: 20, alignItems: 'center' }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 16 }}>Nincs bejelentkezett autós.</Text>
-              </View>
-            }
             contentContainerStyle={{ paddingBottom: 150 }}
             style={{ flex: 1 }}
           />
@@ -575,11 +572,6 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
             data={members}
             keyExtractor={(item) => item.uid}
             renderItem={({ item }) => renderItem({ item, drag: () => { }, isActive: false } as any)}
-            ListEmptyComponent={
-              <View style={{ padding: 20, alignItems: 'center' }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 16 }}>Nincs bejelentkezett autós.</Text>
-              </View>
-            }
             contentContainerStyle={{ paddingBottom: 150 }}
             style={{ flex: 1 }}
           />
@@ -587,59 +579,60 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
       )}
 
       {/* FOOTER BUTTONS */}
-      {/* We use insets.bottom to ensure on iPhone X+ it doesn't overlap home indicator */}
-      <View style={[
-        styles.footerContainer,
-        {
-          backgroundColor: colors.footerBackground,
-          borderTopColor: colors.border,
-          paddingBottom: Math.max(insets.bottom, 10),
-          paddingTop: 10,
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-        }
-      ]}>
-        <View style={{ flexDirection: 'row' }}>
-          {/* BE */}
-          <TouchableOpacity
-            style={[buttonBaseStyle, { backgroundColor: isUserCheckedIn || (gpsEnabled && isInsideZone === false) ? '#9ca3af' : '#10b981' }]}
-            onPress={handleCheckIn}
-            disabled={isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
-          >
-            <Text style={styles.footerButtonText}>Be</Text>
-          </TouchableOpacity>
+      {/* We use insets.bottom to ensure on iPhone X+ it doesn't overlap      {/* FOOTER BUTTONS - Hidden for V-Osztály */}
+      {locationName !== 'V-Osztály' && (
+        <View style={[
+          styles.footerContainer,
+          {
+            backgroundColor: colors.footerBackground,
+            borderTopColor: colors.border,
+            paddingBottom: insets.bottom + 10,
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 100,
+          }
+        ]}>
+          <View style={{ flexDirection: 'row' }}>
+            {/* BE */}
+            <TouchableOpacity
+              style={[buttonBaseStyle, { backgroundColor: isUserCheckedIn || (gpsEnabled && isInsideZone === false) ? '#9ca3af' : '#10b981' }]}
+              onPress={handleCheckIn}
+              disabled={isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
+            >
+              <Text style={styles.footerButtonText}>Be</Text>
+            </TouchableOpacity>
 
-          {/* KI */}
-          <TouchableOpacity
-            style={[buttonBaseStyle, { backgroundColor: !isUserCheckedIn ? '#9ca3af' : '#f97316' }]}
-            onPress={handleCheckOut}
-            disabled={!isUserCheckedIn || checkingIn}
-          >
-            <Text style={styles.footerButtonText}>Ki</Text>
-          </TouchableOpacity>
+            {/* KI */}
+            <TouchableOpacity
+              style={[buttonBaseStyle, { backgroundColor: !isUserCheckedIn ? '#9ca3af' : '#f97316' }]}
+              onPress={handleCheckOut}
+              disabled={!isUserCheckedIn || checkingIn}
+            >
+              <Text style={styles.footerButtonText}>Ki</Text>
+            </TouchableOpacity>
 
-          {/* LÁNG */}
-          <TouchableOpacity
-            style={[buttonBaseStyle, { backgroundColor: !canUndo || isUserCheckedIn || (gpsEnabled && isInsideZone === false) ? '#9ca3af' : '#ef4444' }]}
-            onPress={handleFlameClick}
-            disabled={!canUndo || isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
-          >
-            <Text style={{ fontSize: 20 }}>🔥</Text>
-          </TouchableOpacity>
+            {/* LÁNG */}
+            <TouchableOpacity
+              style={[buttonBaseStyle, { backgroundColor: !canUndo || isUserCheckedIn || (gpsEnabled && isInsideZone === false) ? '#9ca3af' : '#ef4444' }]}
+              onPress={handleFlameClick}
+              disabled={!canUndo || isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
+            >
+              <Text style={{ fontSize: 20 }}>🔥</Text>
+            </TouchableOpacity>
 
-          {/* FOOD/PHONE */}
-          <TouchableOpacity
-            style={[buttonBaseStyle, { backgroundColor: !isUserCheckedIn || (gpsEnabled && isInsideZone === false) ? '#9ca3af' : '#3b82f6' }]}
-            onPress={handleFoodPhoneClick}
-            disabled={!isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
-          >
-            <Text style={{ fontSize: 20 }}>🍔📞</Text>
-          </TouchableOpacity>
+            {/* FOOD/PHONE */}
+            <TouchableOpacity
+              style={[buttonBaseStyle, { backgroundColor: !isUserCheckedIn || (gpsEnabled && isInsideZone === false) ? '#9ca3af' : '#3b82f6' }]}
+              onPress={handleFoodPhoneClick}
+              disabled={!isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
+            >
+              <Text style={{ fontSize: 20 }}>🍔📞</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 };
