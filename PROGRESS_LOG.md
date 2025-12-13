@@ -2381,3 +2381,26 @@ Az `isAutoRevokeWhitelisted` API valójában `true`-t ad vissza, ha a felhaszná
 
 ---
 *Implementálva: 2025.12.13. 20:45*
+
+## 2025.12.13. - Csillag Droszt Hozzáadása (v1.0.58)
+
+### Változtatás
+Hozzáadtam a "Csillag" droszt geofence zónáját a megadott koordinátákkal.
+
+### Koordináták
+```
+{ lat: 47.56202643749776, lng: 19.026920699291967 },
+{ lat: 47.56211851588406, lng: 19.02784313279864 },
+{ lat: 47.56167285499036, lng: 19.028312536831624 },
+{ lat: 47.56148133013577, lng: 19.02726456503706 }
+```
+
+### Láthatóság
+- Csak a **646-os felhasználónak** látszik (már korábban implementálva volt a `DashboardScreen.tsx`-ben)
+- GPS zóna ellenőrzés **engedélyezve**
+
+### Módosított fájl
+- `/src/services/GeofenceService.ts` - Csillag zóna hozzáadva
+
+---
+*Implementálva: 2025.12.13. 21:52*
