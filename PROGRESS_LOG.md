@@ -2070,3 +2070,17 @@ await Promise.all([
 
 ---
 *Implementálva: 2025.12.13. 14:48*
+
+## 2025.12.13. - Member Item Háttér Méret Csökkentés
+
+### Változtatás:
+- **Member Item** (sofőr lista elem) háttér méretének csökkentése
+- `paddingVertical: 12` → `paddingVertical: 8`
+- **Eredmény**: Kompaktabb lista elemek, háttér csak akkora, mint a szöveg + kis margó
+- **Lekerekített sarkok**: `borderRadius: 8` (már meglévő)
+
+### Módosított fájl:
+- `src/screens/driver/LocationScreen.tsx` - memberItem style
+
+---
+*Implementálva: 2025.12.13. 14:52*
