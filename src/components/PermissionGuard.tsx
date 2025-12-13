@@ -195,8 +195,10 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
         const subscription = AppState.addEventListener('change', nextAppState => {
             if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
                 checkPermissions();
-                // "Unused Apps" - Mivel nincs egzakt API, feltételezzük, hogy megcsinálta, ha visszatér a beállításokból
-                checkPermissions();
+                // "Unused Apps" - Manual confirmation when returning from settings
+                if (currentStep === 'unused_apps') {
+                    setUnusedAppsConfirmed(true);
+                }
             }
             appState.current = nextAppState;
         });
