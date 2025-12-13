@@ -1695,3 +1695,35 @@ cp android/app/build/outputs/apk/release/app-release.apk ~/Desktop/Elitdroszt-FI
   - **Global Checkout on Login:** Users are automatically removed from all queues (Location, V-Class, Emirates) immediately upon login to ensure a clean state.
   - **Session ID:** Integrated secure session ID generation and Firestore synchronization.
   - **Sync Logic:** Verified and synchronized "Double Queue" (V-Class + City) and "Global Checkout" rules with web application logic.
+
+# 2025.12.13. - Projekt Állapot Emlékeztető
+
+## Hol tartunk?
+A mai napon sikeresen megoldottuk a "Bejelentkezett Autósok" lista megjelenítési problémáit a mobil applikációban ("Reptér" stb. tabok alatt).
+
+### Elvégzett Feladatok:
+1.  **Google Services Javítás**: A `google-services` plugin hiánya miatt nem töltött be a Firebase, javítva (`build.gradle`).
+2.  **Lista Láthatóság (Debug)**: A `DraggableFlatList` komponens inkompatibilisnek bizonyult a jelenlegi elrendezéssel (üres/láthatatlan lista).
+3.  **Megoldás**: Visszatértünk a stabil `FlatList` használatához minden felhasználónál (Adminnál is).
+    *   *Következmény*: A "Drag-and-Drop" sorrendezés átmenetileg nem elérhető.
+    *   *Funkció*: A "Kick" (kiléptetés) gomb Adminoknak továbbra is működik.
+4.  **Formázás**: A lista elemek egysoros "Név - Rendszám - Idő" formátumot kaptak (pl. `646V - AAKZ472 - 10:00`).
+5.  **Build**: A javított verzió (`v1.0.22_fixed`) a `/Users/oliwer/build/` mappában található.
+
+## Hogyan Dolgozunk? (Workflow)
+Emlékeztető a munkafolyamatról a hatékony együttműködéshez:
+
+1.  **Egyeztetés**: Mindig egyeztetjük a feladatot (USER kérés).
+2.  **Terv**: Én (AI) elemzem a kódot (`index.html` a referencia) és tervet készítek.
+3.  **Implementálás**: Módosítom a fájlokat (`.tsx`, `.gradle` stb.).
+4.  **Build & Deliver**: Lefuttatom a `gradlew assembleRelease` parancsot, és a kész APK-t átmásolom a `build` mappába.
+5.  **Teszt**: Te (USER) kipróbálod (telefon/emulátor), és visszajelzel (kép/szöveg).
+6.  **Git**: A munka végén mindent committolunk a repóba.
+
+## Következő Lépések (Teendők):
+- **Tesztelés**: A `v1.0.22_fixed` alapos tesztelése élesben.
+- **Drag-and-Drop**: Később visszatérni a `DraggableFlatList` javítására, ha a sorrendezés kritikussá válik.
+- **Naplózás**: A `PROGRESS_LOG.md` folyamatos vezetése.
+
+---
+*Utolsó frissítés: 2025.12.13.*

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, KeyboardAvoidingView, FlatList } from 'react-native';
 import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-native-draggable-flatlist';
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../config/firebase';
@@ -400,41 +400,31 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Member>) => {
     return (
-      <ScaleDecorator>
-        <TouchableOpacity
-          onLongPress={drag}
-          disabled={userProfile?.role !== 'admin'}
-          style={[
-            styles.memberItem,
-            { backgroundColor: isActive ? colors.primary : colors.memberItem },
-          ]}
-        >
-          <View style={styles.memberInfo}>
-            {/* Show display name if present, otherwise fallback to username */}
-            <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text }]}>
-              {item.displayName || item.username}
-            </Text>
-            {/* License plate */}
-            {item.licensePlate ? (
-              <Text style={[styles.licensePlate, { color: isActive ? '#e5e7eb' : colors.textSecondary }]}>
-                {item.licensePlate}
-              </Text>
-            ) : null}
-            {/* Check‑in time */}
-            {item.checkInTime ? (
-              <Text style={[styles.checkInTime, { color: isActive ? '#e5e7eb' : colors.textSecondary }]}>
-                {item.checkInTime}
-              </Text>
-            ) : null}
-          </View>
+      <TouchableOpacity
+        onLongPress={drag}
+        disabled={userProfile?.role !== 'admin'}
+        style={[
+          styles.memberItem,
+          {
+            backgroundColor: isActive ? colors.primary : (theme === 'dark' ? '#374151' : '#ffffff'),
+            borderWidth: 1,
+            borderColor: theme === 'dark' ? '#4b5563' : '#e5e7eb'
+          },
+        ]}
+      >
+        <View style={styles.memberInfo}>
+          <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text }]}>
+            {item.displayName || item.username}
+            {item.checkInTime ? ` - ${item.checkInTime}` : ''}
+          </Text>
+        </View>
 
-          {userProfile?.role === 'admin' && (
-            <TouchableOpacity onPress={() => handleManualKick(item.uid)} style={styles.kickButton}>
-              <Ionicons name="close-circle" size={24} color="#ef4444" />
-            </TouchableOpacity>
-          )}
-        </TouchableOpacity>
-      </ScaleDecorator>
+        {userProfile?.role === 'admin' && (
+          <TouchableOpacity onPress={() => handleManualKick(item.uid)} style={styles.kickButton}>
+            <Ionicons name="close-circle" size={24} color="#ef4444" />
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
     );
   };
 
@@ -478,15 +468,36 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color="#3b82f6" />
         </View>
+      ) : userProfile?.role === 'admin' ? (
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={members}
+            keyExtractor={(item) => item.uid}
+            renderItem={({ item }) => renderItem({ item, drag: () => { }, isActive: false } as any)}
+            ListEmptyComponent={
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 16 }}>Nincs bejelentkezett autós.</Text>
+              </View>
+            }
+            contentContainerStyle={{ paddingBottom: 150 }}
+            style={{ flex: 1 }}
+          />
+        </View>
       ) : (
-        <DraggableFlatList
-          data={members}
-          onDragEnd={({ data }) => handleDragEnd(data)}
-          keyExtractor={(item) => item.uid}
-          renderItem={renderItem}
-          contentContainerStyle={{ paddingBottom: 120 }}
-          style={{ flex: 1 }}
-        />
+        <View style={{ flex: 1 }}>
+          <FlatList
+            data={members}
+            keyExtractor={(item) => item.uid}
+            renderItem={({ item }) => renderItem({ item, drag: () => { }, isActive: false } as any)}
+            ListEmptyComponent={
+              <View style={{ padding: 20, alignItems: 'center' }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 16 }}>Nincs bejelentkezett autós.</Text>
+              </View>
+            }
+            contentContainerStyle={{ paddingBottom: 150 }}
+            style={{ flex: 1 }}
+          />
+        </View>
       )}
 
       {/* FOOTER BUTTONS */}
