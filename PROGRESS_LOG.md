@@ -2280,3 +2280,34 @@ Töröltem a hardcoded backgroundColor-t az összes rendelések tab StyleSheet-j
 
 ---
 *Implementálva: 2025.12.13. 16:05*
+
+## 2025.12.13. - Single Session Javítás
+
+### Probléma:
+- Korábban volt egy szabály: ha valaki bejelentkezik egy másik eszközön, akkor az előző eszközről automatikusan kijelentkezik **a sorból**
+- Ez a funkció nem működött - a felhasználó kijelentkezett, de **a sorban maradt**
+
+### Ok:
+- A `sessionId` mechanizmus már implementálva volt (AuthContext.tsx)
+- Session mismatch esetén `signOut(auth)` fut, de **nincs checkoutFromAllLocations**
+- Így a felhasználó kijelentkezik, de a Firebase-ben a sorban marad
+
+### Megoldás:
+**AuthContext.tsx** módosítása:
+```tsx
+// Session mismatch esetén:
+await checkoutFromAllLocations(user.uid, data as UserProfile); // Kilép a sorból
+Alert.alert("Biztonsági Figyelmeztetés", "Bejelentkeztél egy másik eszközön. Ezen az eszközön kiléptettünk a sorból.");
+await signOut(auth);
+```
+
+### Eredmény:
+- ✅ **Másik eszközön való bejelentkezés** automatikusan kiléptet a sorból
+- ✅ **Figyelmeztetés**: "Bejelentkeztél egy másik eszközön. Ezen az eszközön kiléptettünk a sorból."
+- ✅ **Single session** szabály helyreállítva
+
+### Módosított fájl:
+- `src/context/AuthContext.tsx`
+
+---
+*Implementálva: 2025.12.13. 16:17*
