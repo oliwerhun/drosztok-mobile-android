@@ -2404,3 +2404,51 @@ Hozzáadtam a "Csillag" droszt geofence zónáját a megadott koordinátákkal.
 
 ---
 *Implementálva: 2025.12.13. 21:52*
+
+## 2025.12.13. - V-Osztály Auto-Checkout Bug Javítás (v1.0.59)
+
+### Probléma
+Amikor a felhasználó átváltott a V-Osztály tab-ra, automatikusan kilépett minden más drosztról (pl. Akadémia, Csillag), hibaüzenettel: "Elhagytad a droszt területét".
+
+### Ok
+1. A V-Osztály **virtuális sor**, nincs GPS koordinátája a `GEOFENCED_LOCATIONS`-ben
+2. A `VClassScreen` `LocationScreen`-t renderel `gpsEnabled={true}` paraméterrel
+3. `GeofenceService.getStatus('V-Osztály')` → `false` (nincs a zónában)
+4. Az auto-checkout `useEffect` minden LocationScreen példányra futott, **függetlenül attól, hogy van-e geofence koordináta**
+5. Amikor `isInsideZone === false` ÉS a felhasználó benne van a V-Osztály sorban → automatikus kiléptetés
+
+### Megoldás
+Az `index.html` mintájára módosítottam az auto-checkout logikát:
+- **Csak geofence-elt zónákra fut** az automatikus kiléptetés
+- Hozzáadtam ellenőrzést: `if (!GEOFENCED_LOCATIONS[resolvedGeofenceName]) return;`
+- Ez megegyezik az index.html logikájával, ahol csak a `geofencedLocations` objektumban lévő zónákra fut a kiléptetés
+
+### Kód változás
+```tsx
+// Auto-checkout if user leaves the zone
+// Only runs for zones with geofence coordinates (like index.html)
+useEffect(() => {
+  // Skip auto-checkout if zone has no geofence coordinates (e.g., V-Osztály)
+  if (!GEOFENCED_LOCATIONS[resolvedGeofenceName]) {
+    return;
+  }
+  
+  if (gpsEnabled && isInsideZone === false && user && !loading && !checkingIn) {
+    // ... auto-checkout logic
+  }
+}, [isInsideZone, members, user, gpsEnabled, loading, checkingIn, resolvedGeofenceName]);
+```
+
+### Eredmény
+- ✅ V-Osztály tab váltás **nem léptet ki** más drosztokról
+- ✅ Geofence-elt droszt elhagyása továbbra is **automatikusan kiléptet**
+- ✅ Működés megegyezik az index.html-lel
+
+### Módosított fájl
+- `/src/screens/driver/LocationScreen.tsx` - Auto-checkout feltétel javítása
+
+### Megjegyzés
+A **Csillag** droszt (646-os felhasználónak) tesztelési célból megmaradt, GPS koordinátákkal rendelkezik.
+
+---
+*Implementálva: 2025.12.13. 22:13*
