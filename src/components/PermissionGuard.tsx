@@ -137,13 +137,13 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                 setIsBatteryWhitelisted(true); // iOS or no module
             }
 
-            // 5. Unused Apps Check (Auto Revoke) - NEW
+            // 5. Unused Apps Check (App Hibernation) - NEW
             if (Platform.OS === 'android' && BatteryOptimization) {
                 try {
                     // Check if method exists (might be old native build in dev)
-                    if (BatteryOptimization.isAutoRevokeWhitelisted) {
-                        const isWhitelisted = await BatteryOptimization.isAutoRevokeWhitelisted();
-                        setUnusedAppsConfirmed(!isWhitelisted); // Negated: whitelisted = bad (app will be paused)
+                    if (BatteryOptimization.isAppHibernationEnabled) {
+                        const isHibernated = await BatteryOptimization.isAppHibernationEnabled();
+                        setUnusedAppsConfirmed(!isHibernated); // Negated: hibernated = bad (app will be paused)
                     } else {
                         // Fallback for older builds without this method
                         setUnusedAppsConfirmed(false); // Default: disabled
@@ -391,13 +391,6 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
 
                         <TouchableOpacity style={styles.mainButton} onPress={handleOpenSettings}>
                             <Text style={styles.mainButtonText}>Beállítások megnyitása</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={[styles.mainButton, { backgroundColor: '#10b981', marginTop: 10 }]}
-                            onPress={() => setUnusedAppsConfirmed(true)}
-                        >
-                            <Text style={styles.mainButtonText}>✓ Kész, OFF-ra állítottam</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
