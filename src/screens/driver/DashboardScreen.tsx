@@ -25,7 +25,6 @@ export default function DashboardScreen({ navigation }: any) {
   const { increaseFontSize, decreaseFontSize } = useFontSize();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState('Akadémia');
-  const [headerFontSize, setHeaderFontSize] = useState(20); // Fejléc betűméret
 
   // Profile Edit State
   const [editLicensePlate, setEditLicensePlate] = useState('');
@@ -323,7 +322,7 @@ export default function DashboardScreen({ navigation }: any) {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + 10, backgroundColor: colors.headerBackground }]}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.headerTitle, { color: colors.headerText, fontSize: headerFontSize }]}>
+          <Text style={[styles.headerTitle, { color: colors.headerText }]}>
             {userProfile?.username || 'N/A'}
           </Text>
         </View>
@@ -334,10 +333,10 @@ export default function DashboardScreen({ navigation }: any) {
           </TouchableOpacity>
 
           <View style={styles.fontControls}>
-            <TouchableOpacity onPress={() => setHeaderFontSize(prev => Math.max(14, prev - 2))} style={styles.iconButton}>
+            <TouchableOpacity onPress={decreaseFontSize} style={styles.iconButton}>
               <Ionicons name="text" size={18} color={colors.headerText} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setHeaderFontSize(prev => Math.min(28, prev + 2))} style={styles.iconButton}>
+            <TouchableOpacity onPress={increaseFontSize} style={styles.iconButton}>
               <Ionicons name="text" size={24} color={colors.headerText} />
             </TouchableOpacity>
           </View>

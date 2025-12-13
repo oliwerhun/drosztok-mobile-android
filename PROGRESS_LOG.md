@@ -1791,3 +1791,36 @@ Egységes elnevezési rendszer kialakítása az app UI elemeihez, hogy a jövőb
 
 ---
 *Dokumentálva: 2025.12.13. 13:20*
+
+## 2025.12.13. - Betűméret Gombok és GPS Zónák Javítás
+
+### 1. Betűméret Gombok Visszaállítása
+**Probléma:** A fejléc Aa gombok a sofőr nevének betűméretét állították (nem intuitív).
+**Megoldás:** Visszaállítottam az eredeti működést.
+
+**Változtatások:**
+- `DashboardScreen.tsx`:
+  - Eltávolítottam a `headerFontSize` state-et
+  - Visszaállítottam a `decreaseFontSize` és `increaseFontSize` (FontSizeContext) használatát
+  - Sofőr név fix 20px marad
+- **Eredmény**: Aa gombok most a **Member Item** (sofőr lista) betűméretét állítják
+
+### 2. GPS Zónák Visszaállítása
+**Forrás:** `index.html` geofencedLocations objektum
+**Hozzáadott GPS zónák:**
+- ✅ Belváros (9 koordináta)
+- ✅ Conti (11 koordináta)
+- ✅ Budai (19 koordináta)
+- ✅ Crowne (7 koordináta)
+- ✅ Kozmo (8 koordináta)
+- ✅ Reptér (8 koordináta)
+
+**Meglévő zónák:**
+- ✅ Akadémia (már létezett)
+- ✅ Csillag (csak 646-nak látszik, megmaradt)
+
+**Módosított fájl:**
+- `src/screens/driver/LocationScreen.tsx` - GEOFENCED_LOCATIONS objektum
+
+---
+*Implementálva: 2025.12.13. 14:05*
