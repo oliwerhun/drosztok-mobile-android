@@ -486,31 +486,42 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<Member>) => {
     return (
-      <TouchableOpacity
-        onLongPress={drag}
-        disabled={userProfile?.role !== 'admin'}
-        style={[
-          styles.memberItem,
-          {
-            backgroundColor: isActive ? colors.primary : (theme === 'dark' ? '#374151' : '#ffffff'),
-            borderWidth: 1,
-            borderColor: theme === 'dark' ? '#4b5563' : '#e5e7eb'
-          },
-        ]}
-      >
-        <View style={styles.memberInfo}>
-          <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text, fontSize: fontSize }]}>
-            {item.displayName || item.username}
-            {item.checkInTime ? ` - ${item.checkInTime}` : ''}
-          </Text>
-        </View>
+      <ScaleDecorator>
+        <View
+          style={[
+            styles.memberItem,
+            {
+              backgroundColor: isActive ? colors.primary : (theme === 'dark' ? '#374151' : '#ffffff'),
+              borderWidth: 1,
+              borderColor: theme === 'dark' ? '#4b5563' : '#e5e7eb'
+            },
+          ]}
+        >
+          {userProfile?.role === 'admin' && (
+            <TouchableOpacity
+              onLongPress={drag}
+              delayLongPress={100}
+              style={styles.dragHandle}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={[styles.dragIcon, { color: colors.textSecondary }]}>☰</Text>
+            </TouchableOpacity>
+          )}
 
-        {userProfile?.role === 'admin' && (
-          <TouchableOpacity onPress={() => handleManualKick(item.uid)} style={styles.kickButton}>
-            <Ionicons name="close-circle" size={24} color="#ef4444" />
-          </TouchableOpacity>
-        )}
-      </TouchableOpacity>
+          <View style={styles.memberInfo}>
+            <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text, fontSize: fontSize }]}>
+              {item.displayName || item.username}
+              {item.checkInTime ? ` - ${item.checkInTime}` : ''}
+            </Text>
+          </View>
+
+          {userProfile?.role === 'admin' && (
+            <TouchableOpacity onPress={() => handleManualKick(item.uid)} style={styles.kickButton}>
+              <Ionicons name="close-circle" size={24} color="#ef4444" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </ScaleDecorator>
     );
   };
 
@@ -684,6 +695,8 @@ const styles = StyleSheet.create({
   licensePlate: { fontSize: 13 },
   checkInTime: { fontSize: 12, marginTop: 2 },
   kickButton: { padding: 8 },
+  dragHandle: { paddingRight: 12, paddingVertical: 4 },
+  dragIcon: { fontSize: 24, color: '#9ca3af' },
   footerContainer: {
     borderTopWidth: 1,
     paddingHorizontal: 10,
