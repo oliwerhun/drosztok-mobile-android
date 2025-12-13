@@ -292,11 +292,11 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         checkInTime: new Date().toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
       };
 
-      // 1. Global Checkout logic
-      await checkoutFromAllLocations(user.uid, userProfile);
-
-      // 2. Main Check-in
-      await setDoc(locationRef, { [resolvedMembersField]: arrayUnion(newMember) }, { merge: true });
+      // Parallel execution: checkout from all locations AND check-in to new location
+      await Promise.all([
+        checkoutFromAllLocations(user.uid, userProfile),
+        setDoc(locationRef, { [resolvedMembersField]: arrayUnion(newMember) }, { merge: true })
+      ]);
 
       // 3. V-Class Double Queue Logic (City locations only)
       if (userProfile.userType === 'V-Osztály' && locationName !== 'Reptér' && locationName !== 'Emirates') {

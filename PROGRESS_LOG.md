@@ -1933,3 +1933,65 @@ Minden sáv magasságának egységesítése az akció gombok magasságára (Be, 
 
 ---
 *Implementálva: 2025.12.13. 14:36*
+
+## 2025.12.13. - Release APK v1.0.27 (Instant UI)
+
+### Build információk:
+- **Verzió**: v1.0.27_instant_ui
+- **Build idő**: 23 másodperc
+- **APK helye**: `/Users/oliwer/build/Elitdroszt_v1.0.27_instant_ui.apk`
+- **Telepítve**: Oppo telefon (77536d6)
+
+### Tartalmazza:
+1. **Instant UI (Bejelentkezési sebesség optimalizálás)**:
+   - Blokkoló teljes képernyős loading törölve
+   - Gombok és UI azonnal megjelennek
+   - Csak a lista tetején kis spinner loading közben
+   - **Eredmény**: Azonnali interakció, "csalás" a megjelenés gyorsaságával
+
+2. **Korábbi javítások**:
+   - V-Osztály UI egyszerűsítés (státusz ikon és gombok elrejtve)
+   - UI magasság egységesítés (paddingVertical: 12)
+   - Betűméret gombok (Member Item-ekre)
+   - GPS zónák (Belváros, Conti, Budai, Crowne, Kozmo, Reptér)
+
+---
+*Build és telepítés: 2025.12.13. 14:38*
+
+## 2025.12.13. - Check-in Párhuzamosítás (Promise.all)
+
+### Probléma:
+- Az Instant UI nem oldotta meg a lassúságot
+- A check-in továbbra is lassú volt
+
+### Ok:
+- A `checkoutFromAllLocations` és a `setDoc` **soros** végrehajtása
+- A check-in megvárta, amíg az összes korábbi lokációról kijelentkezik
+- Ez lassította a folyamatot
+
+### Megoldás (Korábbi optimalizáció visszaállítása):
+**Forrás**: PROGRESS_LOG.md - 2025-12-06 23:20 - "PÁRHUZAMOSÍTÁS" optimalizáció
+
+**Változtatás:**
+```tsx
+// ELŐTTE (soros):
+await checkoutFromAllLocations(user.uid, userProfile);
+await setDoc(locationRef, { [resolvedMembersField]: arrayUnion(newMember) }, { merge: true });
+
+// UTÁNA (párhuzamos):
+await Promise.all([
+  checkoutFromAllLocations(user.uid, userProfile),
+  setDoc(locationRef, { [resolvedMembersField]: arrayUnion(newMember) }, { merge: true })
+]);
+```
+
+### Eredmény:
+- ✅ **Párhuzamos végrehajtás**: A két művelet egyszerre fut
+- ✅ **Gyorsabb check-in**: Nem várja meg a checkout befejezését
+- ✅ **Maximális hálózati sebesség**: Szinkronizált megjelenés
+
+### Módosított fájl:
+- `src/screens/driver/LocationScreen.tsx` - handleCheckIn függvény
+
+---
+*Implementálva: 2025.12.13. 14:42*
