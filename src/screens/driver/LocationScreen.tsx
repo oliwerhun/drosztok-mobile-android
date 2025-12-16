@@ -396,24 +396,30 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
       const userObject = currentMembers[userIndex];
       let currentName = userObject.displayName || '';
 
-      const foodPhonePrefix = '🍔📞 ';
+      const foodPhoneSuffix = ' 🍔📞';
       const flamePrefix = '🔥 ';
 
+      // Remove flame prefix if present to get base name
       let baseName = currentName;
       if (baseName.startsWith(flamePrefix)) {
         baseName = baseName.substring(flamePrefix.length);
       }
-      if (baseName.startsWith(foodPhonePrefix)) {
-        baseName = baseName.substring(foodPhonePrefix.length);
+
+      // Remove food/phone suffix if present
+      if (baseName.endsWith(foodPhoneSuffix)) {
+        baseName = baseName.substring(0, baseName.length - foodPhoneSuffix.length);
       }
 
-      const hasFoodPhone = currentName.includes(foodPhonePrefix);
+      // Toggle food/phone suffix
+      const hasFoodPhone = currentName.includes(foodPhoneSuffix);
       let newDisplayName;
 
       if (hasFoodPhone) {
+        // Remove food/phone
         newDisplayName = (currentName.startsWith(flamePrefix) ? flamePrefix : '') + baseName;
       } else {
-        newDisplayName = (currentName.startsWith(flamePrefix) ? flamePrefix : '') + foodPhonePrefix + baseName;
+        // Add food/phone at the end
+        newDisplayName = (currentName.startsWith(flamePrefix) ? flamePrefix : '') + baseName + foodPhoneSuffix;
       }
 
       currentMembers[userIndex] = {
