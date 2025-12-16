@@ -68,8 +68,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (remoteSessionId) {
             const localSessionId = await AsyncStorage.getItem('sessionId');
+
+            // Wait 2 seconds to avoid race condition with login sessionId update
+            // This prevents false positive "logged in on another device" alert
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Re-check after delay
+            const updatedLocalSessionId = await AsyncStorage.getItem('sessionId');
+
             // If local session exists but differs from remote, it means a newer login happened elsewhere
-            if (localSessionId && localSessionId !== remoteSessionId) {
+            if (updatedLocalSessionId && updatedLocalSessionId !== remoteSessionId) {
               console.log("Session Mismatch! Logging out.");
 
               // Checkout from all locations before logging out
