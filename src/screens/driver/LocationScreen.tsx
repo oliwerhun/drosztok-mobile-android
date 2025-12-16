@@ -543,6 +543,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
       {userProfile?.role === 'admin' ? (
         <View style={{ flex: 1 }}>
           <DraggableFlatList
+            key={`location-members-${locationName}`}
             data={members}
             onDragEnd={({ data }) => handleDragEnd(data)}
             keyExtractor={(item) => item.uid}
