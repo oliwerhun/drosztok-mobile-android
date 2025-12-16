@@ -89,7 +89,9 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
             const { status: notifStatus } = await Notifications.getPermissionsAsync();
             setNotificationStatus(notifStatus === 'granted' ? 'granted' : 'denied');
 
-            // 3. Mock Location
+            // 3. Mock Location - TEMPORARILY DISABLED
+            // TODO: Re-implement mock location detection later
+            /*
             if (Platform.OS === 'android') {
                 const mockedValue = await AsyncStorage.getItem('IS_MOCKED_LOCATION');
                 const mocked = mockedValue === 'true';
@@ -148,6 +150,7 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                     }
                 }
             }
+            */
 
             // 4. Battery Optimization Check (Native Module)
             if (Platform.OS === 'android' && BatteryOptimization) {
