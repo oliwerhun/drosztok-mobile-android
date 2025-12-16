@@ -353,8 +353,9 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
       }
 
       let displayName = lastCheckedOut.memberData.displayName || '';
-      displayName = displayName.replace(/^[🔥🍔☎️\s]+/, '');
-      displayName = '🔥 ' + displayName;
+      // Remove any existing flame marker and clean icons
+      displayName = displayName.replace('__FLAME__', '').replace(/^[🍔☎️\s]+/, '').trim();
+      displayName = '__FLAME__' + displayName;
 
       const memberToReinsert = {
         ...lastCheckedOut.memberData,
@@ -397,17 +398,15 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
       let currentName = userObject.displayName || '';
 
       const foodPhoneSuffix = ' 🍔 ☎️';
-      const flamePrefix = '🔥 ';
+      const flameMarker = '__FLAME__';
 
-      // Remove flame prefix if present to get base name
-      let baseName = currentName;
-      if (baseName.startsWith(flamePrefix)) {
-        baseName = baseName.substring(flamePrefix.length);
-      }
+      // Check if has flame marker
+      const hasFlame = currentName.includes(flameMarker);
 
-      // Remove food/phone suffix if present
+      // Get base name without flame marker and food/phone suffix
+      let baseName = currentName.replace(flameMarker, '').trim();
       if (baseName.endsWith(foodPhoneSuffix)) {
-        baseName = baseName.substring(0, baseName.length - foodPhoneSuffix.length);
+        baseName = baseName.substring(0, baseName.length - foodPhoneSuffix.length).trim();
       }
 
       // Toggle food/phone suffix
@@ -416,10 +415,10 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
       if (hasFoodPhone) {
         // Remove food/phone
-        newDisplayName = (currentName.startsWith(flamePrefix) ? flamePrefix : '') + baseName;
+        newDisplayName = (hasFlame ? flameMarker : '') + baseName;
       } else {
         // Add food/phone at the end
-        newDisplayName = (currentName.startsWith(flamePrefix) ? flamePrefix : '') + baseName + foodPhoneSuffix;
+        newDisplayName = (hasFlame ? flameMarker : '') + baseName + foodPhoneSuffix;
       }
 
       currentMembers[userIndex] = {
@@ -475,9 +474,14 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
           style={[
             styles.memberItem,
             {
-              backgroundColor: isActive ? colors.primary : (theme === 'dark' ? '#4b5563' : '#ffffff'),
-              borderWidth: 1,
-              borderColor: theme === 'dark' ? '#4b5563' : '#e5e7eb'
+              backgroundColor: isActive ? colors.primary :
+                (item.displayName?.includes('__FLAME__')
+                  ? (theme === 'dark' ? '#fecaca' : '#ffe4e6')
+                  : (theme === 'dark' ? '#4b5563' : '#ffffff')),
+              borderWidth: item.displayName?.includes('__FLAME__') ? 2 : 1,
+              borderColor: item.displayName?.includes('__FLAME__')
+                ? (theme === 'dark' ? '#dc2626' : '#f43f5e')
+                : (theme === 'dark' ? '#4b5563' : '#e5e7eb')
             },
           ]}
         >
@@ -497,10 +501,11 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
                 const foodPhoneSuffix = ' 🍔 ☎️';
                 const hasFoodPhone = displayName.includes(foodPhoneSuffix);
 
-                // Remove food/phone suffix temporarily
-                const nameWithoutIcons = hasFoodPhone
-                  ? displayName.replace(foodPhoneSuffix, '')
-                  : displayName;
+                // Remove flame marker and food/phone suffix temporarily
+                let nameWithoutIcons = displayName.replace('__FLAME__', '').trim();
+                if (hasFoodPhone) {
+                  nameWithoutIcons = nameWithoutIcons.replace(foodPhoneSuffix, '').trim();
+                }
 
                 // Build: name - time  icons
                 return (
@@ -529,9 +534,13 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         style={[
           styles.memberItem,
           {
-            backgroundColor: theme === 'dark' ? '#4b5563' : '#ffffff',
-            borderWidth: 1,
-            borderColor: theme === 'dark' ? '#4b5563' : '#e5e7eb'
+            backgroundColor: item.displayName?.includes('__FLAME__')
+              ? (theme === 'dark' ? '#fecaca' : '#ffe4e6')
+              : (theme === 'dark' ? '#4b5563' : '#ffffff'),
+            borderWidth: item.displayName?.includes('__FLAME__') ? 2 : 1,
+            borderColor: item.displayName?.includes('__FLAME__')
+              ? (theme === 'dark' ? '#dc2626' : '#f43f5e')
+              : (theme === 'dark' ? '#4b5563' : '#e5e7eb')
           },
         ]}
       >
@@ -542,10 +551,11 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
               const foodPhoneSuffix = ' 🍔 ☎️';
               const hasFoodPhone = displayName.includes(foodPhoneSuffix);
 
-              // Remove food/phone suffix temporarily
-              const nameWithoutIcons = hasFoodPhone
-                ? displayName.replace(foodPhoneSuffix, '')
-                : displayName;
+              // Remove flame marker and food/phone suffix temporarily
+              let nameWithoutIcons = displayName.replace('__FLAME__', '').trim();
+              if (hasFoodPhone) {
+                nameWithoutIcons = nameWithoutIcons.replace(foodPhoneSuffix, '').trim();
+              }
 
               // Build: name - time  icons
               return (
