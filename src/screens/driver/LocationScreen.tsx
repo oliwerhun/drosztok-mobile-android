@@ -303,7 +303,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
     // Disable Flame for Emirates (violates Reptér prerequisite rule)
     if (locationName === 'Emirates') {
-      Alert.alert('Figyelem', 'Emirates sorból nem lehet visszavonni a kilépést. Először a Reptéri sorba kell bejelentkezned!');
+      Alert.alert('Figyelem', 'Ez a gomb itt nem használható!');
       return;
     }
 
