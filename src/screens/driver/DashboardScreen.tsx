@@ -21,6 +21,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useFontSize } from '../../context/FontSizeContext';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { logger } from '../../utils/Logger';
+import packageJson from '../../../package.json';
 
 interface Tab {
   id: string;
@@ -353,6 +354,10 @@ export default function DashboardScreen({ navigation }: any) {
                 <Text style={styles.saveButtonText}>Mentés</Text>
               )}
             </TouchableOpacity>
+
+            <View style={styles.versionContainer}>
+              <Text style={styles.versionText}>Verzió: {packageJson.version}</Text>
+            </View>
           </ScrollView>
         );
       default:
@@ -500,5 +505,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
+  },
+  versionContainer: {
+    marginTop: 32,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    alignItems: 'center',
+  },
+  versionText: {
+    fontSize: 12,
+    color: '#9ca3af',
+    fontWeight: '500',
   },
 });
