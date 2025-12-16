@@ -213,9 +213,24 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
       lastCheckedOut = null;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Check-in error:', error);
-      Alert.alert('Hiba', 'Nem sikerült bejelentkezni.');
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        stack: error.stack
+      });
+
+      // User-friendly error messages
+      let errorMessage = 'Nem sikerült bejelentkezni.';
+
+      if (error.code === 'permission-denied') {
+        errorMessage = 'Nincs jogosultságod ehhez a művelethez. Kérlek, lépj ki és jelentkezz be újra!';
+      } else if (error.message) {
+        errorMessage = `Hiba: ${error.message}`;
+      }
+
+      Alert.alert('Hiba', errorMessage);
     } finally {
       setCheckingIn(false);
     }
