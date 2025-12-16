@@ -2664,3 +2664,49 @@ if (!wasInside && isNowInside) {
 
 ---
 *Implementálva: 2025.12.16. 08:42*
+
+## 2025.12.16. - Auto-Checkout Kijelentkezéskor (v1.0.65)
+
+### Funkció
+Amikor a user kijelentkezik az appból, automatikusan kiléptetésre kerül minden sorból.
+
+### Implementáció
+
+**Módosított fájl:** `DashboardScreen.tsx`
+
+**Változtatás:**
+```tsx
+// handleLogout függvényben
+onPress: async () => {
+  try {
+    // Checkout from all queues before logout
+    if (userProfile?.uid) {
+      console.log('Logout: Checking out from all locations');
+      await checkoutFromAllLocations(userProfile.uid, userProfile);
+    }
+    
+    await stopLocationTracking();
+    await signOut(auth);
+  } catch (error) {
+    console.error('Kijelentkezési hiba:', error);
+    Alert.alert('Hiba', 'Nem sikerült kijelentkezni.');
+  }
+}
+```
+
+### Működés
+1. User megnyomja a "Kijelentkezés" gombot
+2. Megerősítő dialógus jelenik meg
+3. "Igen" gombra kattintva:
+   - `checkoutFromAllLocations()` hívódik → kiléptetés minden sorból
+   - V-Osztály user esetén: kiléptetés a V-Osztály sorból is
+   - GPS tracking leáll
+   - Firebase signOut
+
+### Előnyök
+- Tiszta állapot: user nem marad bent sorokban kijelentkezés után
+- Automatikus: nem kell manuálisan kilépni minden sorból
+- V-Osztály támogatás: dual checkout automatikusan működik
+
+---
+*Implementálva: 2025.12.16. 08:47*
