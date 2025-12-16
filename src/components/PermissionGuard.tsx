@@ -63,18 +63,13 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
         checkPermissions();
     }, []);
 
-    // Periodic Check
+    // Periodic Check - folyamatosan fut, hogy mock location-t is ellenőrizze!
     useEffect(() => {
         if (Platform.OS === 'web') return;
 
-        // Ha már megkaptuk az engedélyt, NE futtassuk a timert! (STOP LOOP)
-        if (permissionsGranted) {
-            return;
-        }
-
         const interval = setInterval(checkPermissions, 2000);
         return () => clearInterval(interval);
-    }, [showModal, permissionsGranted]);
+    }, [showModal]);
 
     const loadSettings = async () => {
         const val = await AsyncStorage.getItem(SETTINGS_CONFIRMED_KEY);
