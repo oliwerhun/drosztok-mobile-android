@@ -495,7 +495,14 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
           </TouchableOpacity>
 
           <View style={styles.memberInfo}>
-            <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text, fontSize: fontSize }]}>
+            <Text style={[
+              styles.memberName,
+              {
+                color: isActive ? '#ffffff' :
+                  (item.displayName?.includes('__FLAME__') && theme === 'dark' ? '#000000' : colors.text),
+                fontSize: fontSize
+              }
+            ]}>
               {(() => {
                 const displayName = item.displayName || item.username;
                 const foodPhoneSuffix = ' 🍔 ☎️';
@@ -545,7 +552,13 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         ]}
       >
         <View style={styles.memberInfo}>
-          <Text style={[styles.memberName, { color: colors.text, fontSize: fontSize }]}>
+          <Text style={[
+            styles.memberName,
+            {
+              color: item.displayName?.includes('__FLAME__') && theme === 'dark' ? '#000000' : colors.text,
+              fontSize: fontSize
+            }
+          ]}>
             {(() => {
               const displayName = item.displayName || item.username;
               const foodPhoneSuffix = ' 🍔 ☎️';
