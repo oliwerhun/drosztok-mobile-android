@@ -118,6 +118,15 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
   const handleCheckIn = async () => {
     if (!user || checkingIn || !userProfile) return;
 
+    // Check if user is approved
+    if (userProfile.status === 'pending') {
+      Alert.alert(
+        "Várakozás",
+        "A regisztrációd még jóváhagyásra vár. Kérlek, vedd fel a kapcsolatot az adminisztrátorral!"
+      );
+      return;
+    }
+
     if (gpsEnabled && GEOFENCED_LOCATIONS[resolvedGeofenceName] && isInsideZone === false) {
       Alert.alert("Hiba", "Nem vagy a droszt területén!");
       return;
