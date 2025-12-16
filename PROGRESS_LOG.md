@@ -3107,3 +3107,99 @@ fun isWhitelisted(promise: Promise) {
 ---
 *Mérföldkő elérve: 2025.12.16. 11:13*
 
+
+## 2025.12.16. - Drag & Drop Tab Rendezés (v1.1.1)
+
+### Funkció
+Tab-ok személyre szabható sorrendje hosszú nyomással (5 mp) és drag & drop-pal.
+
+### Működés
+
+**Aktiválás:**
+1. Tab gomb hosszan nyomva (5 másodperc)
+2. Rezgés + tab kiemelődik (kék szín, nagyobb méret)
+3. Drag mode aktiválódik
+
+**Rendezés:**
+1. Tab húzása balra/jobbra
+2. Elengedés → új sorrend mentve AsyncStorage-ba
+3. App újraindítás → mentett sorrend betöltve
+
+**User-specifikus:**
+- Minden user a saját sorrendjét állítja (`tab_order_{uid}` kulcs)
+- Admin is csak a sajátját rendezheti
+
+### Implementáció
+
+**Tab Interface:**
+```typescript
+interface Tab {
+  id: string;
+  label: string;
+}
+
+const DEFAULT_TAB_ORDER: Tab[] = [
+  { id: 'akademia', label: 'Akadémia' },
+  { id: 'belvaros', label: 'Belváros' },
+  // ... stb
+];
+```
+
+**AsyncStorage Functions:**
+```typescript
+const loadTabOrder = async (uid: string): Promise<Tab[]> => {
+  const saved = await AsyncStorage.getItem(`tab_order_${uid}`);
+  return saved ? mergeTabOrders(DEFAULT_TAB_ORDER, JSON.parse(saved)) : DEFAULT_TAB_ORDER;
+};
+
+const saveTabOrder = async (uid: string, tabs: Tab[]) => {
+  await AsyncStorage.setItem(`tab_order_${uid}`, JSON.stringify(tabs));
+};
+```
+
+**DraggableFlatList:**
+```tsx
+<DraggableFlatList
+  data={tabs}
+  horizontal
+  onDragEnd={({ data }) => {
+    setTabs(data);
+    saveTabOrder(userProfile.uid, data);
+  }}
+  renderItem={({ item, drag, isActive }) => (
+    <TouchableOpacity
+      onLongPress={() => {
+        Vibration.vibrate(100);
+        drag();
+      }}
+      delayLongPress={5000}
+      style={[styles.tab, isActive && styles.draggingTab]}
+    >
+      <Text>{item.label}</Text>
+    </TouchableOpacity>
+  )}
+/>
+```
+
+**Dragging Style:**
+```typescript
+draggingTab: {
+  backgroundColor: '#6366f1',
+  transform: [{ scale: 1.1 }],
+  shadowColor: '#000',
+  shadowOpacity: 0.3,
+  elevation: 5,
+}
+```
+
+### Conditional Tabs
+- **Csillag:** Csak username === '646'
+- **V-Osztály:** userType === 'V-Osztály' VAGY admin
+- **213:** VIP, VIP Kombi, admin, VAGY canSee213
+- **Térkép, Admin:** Csak admin
+
+### Módosított fájlok
+- `src/screens/driver/DashboardScreen.tsx` - Teljes átírás tab kezelésre
+
+---
+*Implementálva: 2025.12.16. 11:35*
