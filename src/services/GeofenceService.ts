@@ -1,4 +1,7 @@
 import * as Location from 'expo-location';
+import { getAuth } from 'firebase/auth';
+import { db } from '../config/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 // Geofence polygon koordináták (7 taxiállomás)
 export interface GeofenceZone {
@@ -155,6 +158,11 @@ class GeofenceService {
   private callbacks: GeofenceCallback[] = [];
   private isTracking: boolean = false;
 
+  // Auto-checkout debounce tracking
+  private outsideZoneSince: Record<string, number | null> = {};
+  private autoCheckoutTimers: Record<string, NodeJS.Timeout | null> = {};
+  private readonly AUTO_CHECKOUT_DELAY_MS = 15000; // 15 seconds
+
   private constructor() {
     // Initialize all zones as "outside" (false)
     Object.keys(GEOFENCED_LOCATIONS).forEach(locationName => {
@@ -214,8 +222,18 @@ class GeofenceService {
       this.locationSubscription.remove();
       this.locationSubscription = null;
     }
+
+    // Clear all auto-checkout timers
+    Object.keys(this.autoCheckoutTimers).forEach(locationName => {
+      if (this.autoCheckoutTimers[locationName]) {
+        clearTimeout(this.autoCheckoutTimers[locationName]!);
+        this.autoCheckoutTimers[locationName] = null;
+      }
+    });
+    this.outsideZoneSince = {};
+
     this.isTracking = false;
-    console.log('GeofenceService: Stopped tracking');
+    console.log('GeofenceService: Stopped GPS tracking and cleared all timers');
   }
 
   /**
@@ -241,6 +259,18 @@ class GeofenceService {
       if (wasInside !== isNowInside) {
         console.log(`GeofenceService: ${locationName} status changed: ${isNowInside ? 'INSIDE' : 'OUTSIDE'}`);
         this.notifyCallbacks(locationName, isNowInside);
+
+        // Auto-checkout logic: user left zone
+        if (wasInside && !isNowInside) {
+          console.log(`GeofenceService: User left ${locationName}, starting ${this.AUTO_CHECKOUT_DELAY_MS / 1000}s debounce timer`);
+          this.startAutoCheckoutTimer(locationName);
+        }
+
+        // Cancel auto-checkout: user returned to zone
+        if (!wasInside && isNowInside) {
+          console.log(`GeofenceService: User returned to ${locationName}, canceling auto-checkout`);
+          this.cancelAutoCheckoutTimer(locationName);
+        }
       }
     });
   }
@@ -265,6 +295,110 @@ class GeofenceService {
     return () => {
       this.callbacks = this.callbacks.filter(cb => cb !== callback);
     };
+  }
+
+  /**
+   * Start auto-checkout timer for a zone
+   * @param locationName - Name of the zone user left
+   */
+  private startAutoCheckoutTimer(locationName: string): void {
+    // Cancel existing timer if any
+    this.cancelAutoCheckoutTimer(locationName);
+
+    // Record when user left zone
+    this.outsideZoneSince[locationName] = Date.now();
+
+    // Set timer for auto-checkout
+    this.autoCheckoutTimers[locationName] = setTimeout(async () => {
+      await this.performAutoCheckout(locationName);
+    }, this.AUTO_CHECKOUT_DELAY_MS);
+  }
+
+  /**
+   * Cancel auto-checkout timer for a zone (user returned)
+   * @param locationName - Name of the zone
+   */
+  private cancelAutoCheckoutTimer(locationName: string): void {
+    if (this.autoCheckoutTimers[locationName]) {
+      clearTimeout(this.autoCheckoutTimers[locationName]!);
+      this.autoCheckoutTimers[locationName] = null;
+    }
+    this.outsideZoneSince[locationName] = null;
+  }
+
+  /**
+   * Perform auto-checkout after debounce period
+   * @param locationName - Name of the zone to checkout from
+   */
+  private async performAutoCheckout(locationName: string): Promise<void> {
+    try {
+      // Verify user is still outside (double-check)
+      const isStillOutside = this.zoneStatus[locationName] === false;
+      if (!isStillOutside) {
+        console.log(`GeofenceService: User returned to ${locationName}, skipping auto-checkout`);
+        return;
+      }
+
+      // Get current user
+      const auth = getAuth();
+      const user = auth.currentUser;
+      if (!user) {
+        console.log('GeofenceService: No authenticated user, skipping auto-checkout');
+        return;
+      }
+
+      // Check if user is in this zone's queue
+      const locationRef = doc(db, 'locations', locationName);
+      const docSnap = await getDoc(locationRef);
+
+      if (!docSnap.exists()) {
+        console.log(`GeofenceService: Location ${locationName} not found in Firebase`);
+        return;
+      }
+
+      const data = docSnap.data();
+      const members = data.members || [];
+      const userInZone = members.some((m: any) => m.uid === user.uid);
+
+      if (!userInZone) {
+        console.log(`GeofenceService: User not in ${locationName} queue, skipping auto-checkout`);
+        return;
+      }
+
+      console.log(`🔴 AUTO-CHECKOUT: ${user.uid} from ${locationName} (outside for ${this.AUTO_CHECKOUT_DELAY_MS / 1000}s)`);
+
+      // Remove user from members array
+      const updatedMembers = members.filter((m: any) => m.uid !== user.uid);
+      await updateDoc(locationRef, { members: updatedMembers });
+
+      // Check if user is V-Osztály and also checkout from V-Osztály queue
+      const profileRef = doc(db, 'profiles', user.uid);
+      const profileSnap = await getDoc(profileRef);
+
+      if (profileSnap.exists()) {
+        const profile = profileSnap.data();
+        if (profile.userType === 'V-Osztály' && locationName !== 'V-Osztály') {
+          console.log(`🔴 AUTO-CHECKOUT: ${user.uid} from V-Osztály (dual checkout)`);
+
+          const vClassRef = doc(db, 'locations', 'V-Osztály');
+          const vClassSnap = await getDoc(vClassRef);
+
+          if (vClassSnap.exists()) {
+            const vClassData = vClassSnap.data();
+            const vClassMembers = vClassData.members || [];
+            const updatedVClassMembers = vClassMembers.filter((m: any) => m.uid !== user.uid);
+            await updateDoc(vClassRef, { members: updatedVClassMembers });
+          }
+        }
+      }
+
+      // Clear timer
+      this.autoCheckoutTimers[locationName] = null;
+      this.outsideZoneSince[locationName] = null;
+
+    } catch (error) {
+      console.error(`GeofenceService: Error during auto-checkout from ${locationName}:`, error);
+    }
   }
 
   /**
