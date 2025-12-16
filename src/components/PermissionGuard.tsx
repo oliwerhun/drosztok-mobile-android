@@ -10,7 +10,7 @@ import { checkoutFromAllLocations } from '../services/LocationService';
 import { useAuth } from '../context/AuthContext';
 import { logger } from '../utils/Logger';
 
-const { BatteryOptimization } = NativeModules;
+const { BatteryOptimization, UnusedAppsModule } = NativeModules;
 
 const SETTINGS_CONFIRMED_KEY = 'system_settings_confirmed_v5'; // Incremented version
 const PERMISSIONS_COMPLETED_KEY = 'permissions_completed_v1';
@@ -41,7 +41,10 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
     // Megjegyzés: isIgnoringBatteryOptimizations = true azt jelenti, hogy KIVÉTEL, tehát JÓ!
     const [isBatteryWhitelisted, setIsBatteryWhitelisted] = useState(false);
 
-    const [unusedAppsConfirmed, setUnusedAppsConfirmed] = useState(false);
+    // Unused Apps Auto-Revoke
+    // true = whitelisted (switch OFF) = GOOD ✅
+    // false = not whitelisted (switch ON) = BAD ❌
+    const [isUnusedAppsWhitelisted, setIsUnusedAppsWhitelisted] = useState(false);
 
     const [systemSettingsConfirmed, setSystemSettingsConfirmed] = useState(false);
     const [permissionsCompleted, setPermissionsCompleted] = useState(false);
@@ -137,23 +140,23 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                 setIsBatteryWhitelisted(true); // iOS or no module
             }
 
-            // 5. Unused Apps Check (Auto Revoke) - NEW
-            if (Platform.OS === 'android' && BatteryOptimization) {
+            // 4. Unused Apps Auto-Revoke (Android 11+)
+            if (Platform.OS === 'android') {
                 try {
                     // Check if method exists (might be old native build in dev)
-                    if (BatteryOptimization.isAutoRevokeWhitelisted) {
-                        const isWhitelisted = await BatteryOptimization.isAutoRevokeWhitelisted();
-                        setUnusedAppsConfirmed(isWhitelisted);
+                    if (UnusedAppsModule && UnusedAppsModule.isWhitelisted) {
+                        const isWhitelisted = await UnusedAppsModule.isWhitelisted();
+                        setIsUnusedAppsWhitelisted(isWhitelisted);
                     } else {
                         // Fallback for older builds without this method
-                        setUnusedAppsConfirmed(true);
+                        setIsUnusedAppsWhitelisted(true);
                     }
                 } catch (e) {
                     console.log('Unused apps check failed', e);
-                    setUnusedAppsConfirmed(true);
+                    setIsUnusedAppsWhitelisted(true);
                 }
             } else {
-                setUnusedAppsConfirmed(true);
+                setIsUnusedAppsWhitelisted(true);
             }
 
             // If Mocked (and LOCKED) -> Block
@@ -387,22 +390,25 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                             <Text style={styles.subText}>{getUnusedAppsTip()}</Text>
                         </Text>
 
-                        <TouchableOpacity style={styles.mainButton} onPress={handleOpenSettings}>
+                        <TouchableOpacity
+                            style={styles.mainButton}
+                            onPress={() => UnusedAppsModule && UnusedAppsModule.openSettings()}
+                        >
                             <Text style={styles.mainButtonText}>Beállítások megnyitása</Text>
                         </TouchableOpacity>
 
                         <View style={{ marginTop: 10, alignItems: 'center' }}>
-                            {unusedAppsConfirmed ? (
-                                <Text style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Rendszer szerint OK!</Text>
+                            {isUnusedAppsWhitelisted ? (
+                                <Text style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Kikapcsolva (Rendben)</Text>
                             ) : (
-                                <Text style={{ color: '#ef4444', fontSize: 12 }}>Rendszer szerint még be van kapcsolva</Text>
+                                <Text style={{ color: '#ef4444', fontSize: 12 }}>❌ Bekapcsolva (Kapcsold ki!)</Text>
                             )}
                         </View>
 
                         <TouchableOpacity
-                            style={[styles.nextButton, !unusedAppsConfirmed && styles.disabledButton]}
+                            style={[styles.nextButton, !isUnusedAppsWhitelisted && styles.disabledButton]}
                             onPress={advanceStep}
-                            disabled={!unusedAppsConfirmed}
+                            disabled={!isUnusedAppsWhitelisted}
                         >
                             <Text style={styles.nextButtonText}>Tovább</Text>
                         </TouchableOpacity>
