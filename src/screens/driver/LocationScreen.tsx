@@ -670,6 +670,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    marginBottom: 12, // Spacing between header and list
   },
   title: { fontWeight: 'bold' },
   count: { fontSize: 16, fontWeight: '600' },
