@@ -99,7 +99,17 @@ export default function DashboardScreen({ navigation }: any) {
 
   useEffect(() => {
     (async () => {
-      logger.log('Dashboard mounted. Tracking DISABLED.');
+      logger.log('Dashboard mounted. Starting background location tracking...');
+      try {
+        const started = await startLocationTracking();
+        if (started) {
+          logger.log('Background location tracking started successfully');
+        } else {
+          logger.log('Failed to start background location tracking (permissions?)');
+        }
+      } catch (error) {
+        logger.log('Error starting background location tracking:', error);
+      }
     })();
 
     const subscription = AppState.addEventListener('change', nextAppState => {
