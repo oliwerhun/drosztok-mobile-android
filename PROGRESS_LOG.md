@@ -2913,3 +2913,44 @@ export const LOCATIONS = [
 
 ---
 *Javítva: 2025.12.16. 10:26*
+
+## 2025.12.16. - Session Mismatch False Positive Javítás (v1.0.72)
+
+### Probléma
+Logout → újra login után hamis "Bejelentkeztél egy másik eszközön" üzenet jelent meg.
+
+### Gyökérok
+**Race condition** a login sessionId frissítés és az AuthContext ellenőrzés között:
+
+1. User bejelentkezik → LoginScreen létrehoz új `sessionId`-t
+2. `AsyncStorage.setItem('sessionId', sessionId)` - lokális mentés
+3. `updateDoc(profileRef, { sessionId })` - Firebase frissítés (aszinkron)
+4. AuthContext `onSnapshot` azonnal fut → ellenőrzi sessionId-t
+5. Firebase update még nem fejeződött be → régi sessionId a Firebase-ben
+6. Mismatch → hamis "másik eszköz" alert
+
+### Megoldás
+2 másodperces késleltetés az AuthContext sessionId ellenőrzésben:
+
+```typescript
+// AuthContext.tsx
+const localSessionId = await AsyncStorage.getItem('sessionId');
+
+// Wait 2 seconds to avoid race condition
+await new Promise(resolve => setTimeout(resolve, 2000));
+
+// Re-check after delay
+const updatedLocalSessionId = await AsyncStorage.getItem('sessionId');
+
+if (updatedLocalSessionId && updatedLocalSessionId !== remoteSessionId) {
+  // Actual mismatch - logout
+}
+```
+
+### Eredmény
+- ✅ Login után nincs hamis "másik eszköz" alert
+- ✅ Valódi másik eszközről login továbbra is működik
+- ✅ 2s késleltetés elegendő a Firebase update befejezéséhez
+
+---
+*Javítva: 2025.12.16. 10:32*
