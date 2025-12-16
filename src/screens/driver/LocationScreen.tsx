@@ -353,7 +353,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
       }
 
       let displayName = lastCheckedOut.memberData.displayName || '';
-      displayName = displayName.replace(/^[🔥🍔📞\s]+/, '');
+      displayName = displayName.replace(/^[🔥🍔☎️\s]+/, '');
       displayName = '🔥 ' + displayName;
 
       const memberToReinsert = {
@@ -396,7 +396,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
       const userObject = currentMembers[userIndex];
       let currentName = userObject.displayName || '';
 
-      const foodPhoneSuffix = ' 🍔📞';
+      const foodPhoneSuffix = ' 🍔 ☎️';
       const flamePrefix = '🔥 ';
 
       // Remove flame prefix if present to get base name
@@ -494,7 +494,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
             <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text, fontSize: fontSize }]}>
               {(() => {
                 const displayName = item.displayName || item.username;
-                const foodPhoneSuffix = ' 🍔📞';
+                const foodPhoneSuffix = ' 🍔 ☎️';
                 const hasFoodPhone = displayName.includes(foodPhoneSuffix);
 
                 // Remove food/phone suffix temporarily
@@ -539,7 +539,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
           <Text style={[styles.memberName, { color: colors.text, fontSize: fontSize }]}>
             {(() => {
               const displayName = item.displayName || item.username;
-              const foodPhoneSuffix = ' 🍔📞';
+              const foodPhoneSuffix = ' 🍔 ☎️';
               const hasFoodPhone = displayName.includes(foodPhoneSuffix);
 
               // Remove food/phone suffix temporarily
@@ -688,7 +688,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
               onPress={handleFoodPhoneClick}
               disabled={!isUserCheckedIn || checkingIn || (gpsEnabled && isInsideZone === false)}
             >
-              <Text style={{ fontSize: 20 }}>🍔📞</Text>
+              <Text style={{ fontSize: 20 }}>🍔 ☎️</Text>
             </TouchableOpacity>
           </View>
         </View>
