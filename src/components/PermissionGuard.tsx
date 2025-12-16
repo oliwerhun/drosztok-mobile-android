@@ -117,13 +117,14 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                             return;
                         }
 
+                        // CSAK AKKOR küldjünk értesítést, ha MOST váltott mock-ra (nem volt locked)
+                        const wasLocked = mockLocked;
                         setMockLocked(true);
 
-                        // FOLYAMATOS KIJELENTKEZTETÉS: Ha mock locked, azonnal kijelentkeztetjük
-                        if (auth.currentUser) {
+                        if (!wasLocked && auth.currentUser) {
                             console.log("🚨 Mock Location Detected! Performing auto-checkout NOW.");
 
-                            // Send notification
+                            // Send notification ONCE
                             Notifications.scheduleNotificationAsync({
                                 content: {
                                     title: "Biztonsági rendszer",
@@ -137,6 +138,13 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                             // Checkout from all locations
                             checkoutFromAllLocations(auth.currentUser.uid).catch(err => console.error("Checkout failed:", err));
                         }
+                    }
+                } else {
+                    // Mock location NINCS → töröljük a lock-ot
+                    if (mockLocked) {
+                        console.log("✅ Mock location cleared - unlocking app");
+                        setMockLocked(false);
+                        setIsMocked(false);
                     }
                 }
             }
