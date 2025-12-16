@@ -2601,3 +2601,66 @@ Ha szükséges auto-checkout:
 
 ---
 *Implementálva: 2025.12.13. 22:38*
+
+## 2025.12.16. - Globális Auto-Checkout Implementálás (v1.0.64)
+
+### Cél
+Automatikus kiléptetés, ha a sofőr fizikailag elhagyja azt a zónát, amelyikbe be van jelentkezve.
+
+### Implementáció
+
+**Architektúra:**
+- Globális auto-checkout a `GeofenceService`-ben (mint index.html)
+- 15 másodperces debounce (GPS ingadozás tolerancia)
+- V-Osztály felhasználók: kiléptetés MINDKÉT sorból
+
+**Működés:**
+1. GPS detektálja, hogy user elhagyta a zónát (`wasInside → isOutside`)
+2. Timer indul: 15 másodperc
+3. Ha user visszatér 15s-en belül → timer törlődik, nincs kiléptetés
+4. Ha user 15s után is kívül van → automatikus kiléptetés
+5. V-Osztály user esetén: kiléptetés a városi sorból ÉS a V-Osztály sorból is
+
+**Kód változások:**
+
+```typescript
+// GeofenceService.ts
+private outsideZoneSince: Record<string, number | null> = {};
+private autoCheckoutTimers: Record<string, NodeJS.Timeout | null> = {};
+private readonly AUTO_CHECKOUT_DELAY_MS = 15000; // 15 seconds
+
+// handleLocationUpdate-ben
+if (wasInside && !isNowInside) {
+  this.startAutoCheckoutTimer(locationName);
+}
+if (!wasInside && isNowInside) {
+  this.cancelAutoCheckoutTimer(locationName);
+}
+
+// performAutoCheckout
+- Ellenőrzi, hogy user még mindig kívül van
+- Lekéri Firebase-ből a members listát
+- Csak akkor léptet ki, ha user benne van a listában
+- V-Osztály user esetén: dual checkout
+```
+
+### Előnyök
+
+1. **GPS ingadozás tolerancia**: 15s debounce megakadályozza a hamis kiléptetéseket
+2. **Visszatérés támogatás**: Ha user gyorsan visszatér, nincs kiléptetés
+3. **Globális logika**: Egy helyen fut, nincs race condition
+4. **V-Osztály támogatás**: Automatikus dual checkout
+5. **Megegyezik index.html-lel**: Ugyanaz az architektúra
+
+### Tesztelési Forgatókönyvek
+
+1. **Normál kiléptetés**: Belépés Csillagba, kisétálás, 15s várakozás → auto-checkout ✅
+2. **Gyors visszatérés**: Belépés, kisétálás, 10s-en belül visszatérés → NINCS checkout ✅
+3. **V-Osztály dual**: V-Osztály user belép Akadémiába, kisétál, 15s → checkout MINDKÉT sorból ✅
+4. **Tab váltás**: Belépés Csillagba, tab váltás → NINCS checkout (fizikailag bent van) ✅
+
+### Módosított fájl
+- `/src/services/GeofenceService.ts` - Globális auto-checkout implementálás
+
+---
+*Implementálva: 2025.12.16. 08:42*
