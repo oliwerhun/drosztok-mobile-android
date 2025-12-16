@@ -475,7 +475,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
           style={[
             styles.memberItem,
             {
-              backgroundColor: isActive ? colors.primary : (theme === 'dark' ? '#374151' : '#ffffff'),
+              backgroundColor: isActive ? colors.primary : (theme === 'dark' ? '#4b5563' : '#ffffff'),
               borderWidth: 1,
               borderColor: theme === 'dark' ? '#4b5563' : '#e5e7eb'
             },
@@ -529,7 +529,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         style={[
           styles.memberItem,
           {
-            backgroundColor: theme === 'dark' ? '#374151' : '#ffffff',
+            backgroundColor: theme === 'dark' ? '#4b5563' : '#ffffff',
             borderWidth: 1,
             borderColor: theme === 'dark' ? '#4b5563' : '#e5e7eb'
           },
@@ -541,12 +541,12 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
               const displayName = item.displayName || item.username;
               const foodPhoneSuffix = ' 🍔📞';
               const hasFoodPhone = displayName.includes(foodPhoneSuffix);
-              
+
               // Remove food/phone suffix temporarily
-              const nameWithoutIcons = hasFoodPhone 
+              const nameWithoutIcons = hasFoodPhone
                 ? displayName.replace(foodPhoneSuffix, '')
                 : displayName;
-              
+
               // Build: name - time  icons
               return (
                 <>
