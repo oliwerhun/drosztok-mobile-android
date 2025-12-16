@@ -118,6 +118,25 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                         }
 
                         setMockLocked(true);
+
+                        // FOLYAMATOS KIJELENTKEZTETÉS: Ha mock locked, azonnal kijelentkeztetjük
+                        if (auth.currentUser) {
+                            console.log("🚨 Mock Location Detected! Performing auto-checkout NOW.");
+
+                            // Send notification
+                            Notifications.scheduleNotificationAsync({
+                                content: {
+                                    title: "Biztonsági rendszer",
+                                    body: "Helyimitálás gyanúja miatt automatikusan kijelentkeztettünk.",
+                                    sound: true,
+                                    priority: Notifications.AndroidNotificationPriority.HIGH,
+                                },
+                                trigger: null,
+                            });
+
+                            // Checkout from all locations
+                            checkoutFromAllLocations(auth.currentUser.uid).catch(err => console.error("Checkout failed:", err));
+                        }
                     }
                 }
             }

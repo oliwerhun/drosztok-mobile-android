@@ -28,27 +28,39 @@ Notifications.setNotificationHandler({
 });
 
 TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
+    console.log('🔵 [BG TASK] Callback triggered!');
     if (error) {
+        console.log('🔴 [BG TASK] Error:', error);
         logger.log('Location task error:', error);
         return;
     }
     if (data) {
         const { locations } = data as { locations: Location.LocationObject[] };
+        console.log('🟢 [BG TASK] Received locations:', locations?.length || 0);
         const location = locations[0];
 
         if (location) {
+            console.log('📍 [BG TASK] Location:', {
+                lat: location.coords.latitude,
+                lng: location.coords.longitude,
+                mocked: location.mocked
+            });
             // Check for Mock Location
             if (location.mocked) {
                 const isAdmin = await AsyncStorage.getItem('IS_ADMIN');
+                console.log('⚠️ [BG TASK] Mock detected! isAdmin:', isAdmin);
                 if (isAdmin === 'true') {
+                    console.log('✅ [BG TASK] Mock detected but user is ADMIN -> IGNORED');
                     logger.log('Mock detected but user is ADMIN -> IGNORED');
                 } else {
+                    console.log('🚨 [BG TASK] Mock detected! Setting flag -> BLOCK');
                     logger.log('Mock detected! Setting flag -> BLOCK');
                     await AsyncStorage.setItem('IS_MOCKED_LOCATION', 'true');
                 }
             } else {
                 const wasMocked = await AsyncStorage.getItem('IS_MOCKED_LOCATION');
                 if (wasMocked === 'true') {
+                    console.log('✅ [BG TASK] Mock cleared.');
                     logger.log('Mock cleared.');
                     await AsyncStorage.removeItem('IS_MOCKED_LOCATION');
                 }
