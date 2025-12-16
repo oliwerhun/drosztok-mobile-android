@@ -53,9 +53,9 @@ export default function AirportScreen({ gpsEnabled }: AirportScreenProps) {
                 <LocationScreen
                     locationName="Emirates"
                     gpsEnabled={gpsEnabled}
-                    firestorePath="locations/Reptér"
-                    membersField="emiratesMembers"
-                    geofenceName="Reptér"
+                    firestorePath="locations/Emirates"
+                    membersField="members"
+                    geofenceName="Emirates"
                 />
             )}
         </View>

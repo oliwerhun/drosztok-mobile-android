@@ -108,6 +108,23 @@ export const GEOFENCED_LOCATIONS: Record<string, GeofenceZone> = {
       { lat: 47.41496080471827, lng: 19.240135446938314 }
     ]
   },
+  'Emirates': {
+    polygon: [
+      { lat: 47.419958, lng: 19.244589 },
+      { lat: 47.417475, lng: 19.251907 },
+      { lat: 47.418049, lng: 19.255322 },
+      // Extra points for Emirates extended zone
+      { lat: 47.4357860656793, lng: 19.259100477392558 },
+      { lat: 47.43352831413943, lng: 19.270397453495274 },
+      { lat: 47.420356166729064, lng: 19.267530417989892 },
+      // Continue with original points
+      { lat: 47.415881, lng: 19.261834 },
+      { lat: 47.412867, lng: 19.259522 },
+      { lat: 47.415307, lng: 19.251631 },
+      { lat: 47.41214381224064, lng: 19.24518843978864 },
+      { lat: 47.41496080471827, lng: 19.240135446938314 }
+    ]
+  },
   'Csillag': {
     polygon: [
       { lat: 47.56202643749776, lng: 19.026920699291967 },
