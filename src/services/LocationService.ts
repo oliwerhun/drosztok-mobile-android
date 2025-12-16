@@ -72,6 +72,25 @@ export const checkoutFromAllLocations = async (uid: string, currentProfile?: any
     }
 };
 
+/**
+ * Checkout from a specific location
+ * Used for Emirates ↔ Reptér queue swapping
+ */
+export const checkoutFromLocation = async (locationName: string, uid: string): Promise<void> => {
+    if (!uid) return;
+
+    const locationRef = doc(db, 'locations', locationName);
+    const docSnap = await getDoc(locationRef);
+
+    if (docSnap.exists()) {
+        const data = docSnap.data();
+        const members: LocationMember[] = data.members || [];
+        const updatedMembers = members.filter(m => m.uid !== uid);
+        await updateDoc(locationRef, { members: updatedMembers });
+        console.log(`Checked out ${uid} from ${locationName}`);
+    }
+};
+
 export const updateUserDisplayNameInAllLocations = async (uid: string, updatedProfile: any) => {
     if (!uid || !updatedProfile) return;
 

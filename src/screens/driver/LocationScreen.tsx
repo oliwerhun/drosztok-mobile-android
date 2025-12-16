@@ -10,7 +10,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Location from 'expo-location';
 import { getDistance } from 'geolib';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { checkoutFromAllLocations } from '../../services/LocationService';
+import { checkoutFromAllLocations, checkoutFromLocation } from '../../services/LocationService';
 import GeofenceService, { GEOFENCED_LOCATIONS } from '../../services/GeofenceService';
 
 // GEOFENCED_LOCATIONS and isPointInPolygon now imported from GeofenceService
@@ -146,9 +146,50 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         checkInTime: new Date().toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
       };
 
+      // EMIRATES PREREQUISITE: Must be in Reptér queue first
+      if (locationName === 'Emirates') {
+        const repterRef = doc(db, 'locations', 'Reptér');
+        const repterSnap = await getDoc(repterRef);
+
+        if (repterSnap.exists()) {
+          const repterMembers = repterSnap.data().members || [];
+          const isInRepter = repterMembers.some((m: any) => m.uid === user.uid);
+
+          if (!isInRepter) {
+            Alert.alert(
+              'Figyelem',
+              'Először a Reptéri sorba kell bejelentkezned!'
+            );
+            return;
+          }
+
+          // User is in Reptér → swap to Emirates
+          console.log('Emirates check-in: swapping from Reptér to Emirates');
+          await checkoutFromLocation('Reptér', user.uid);
+        }
+      }
+
+      // REPTÉR CHECK-IN: If in Emirates, swap back to Reptér
+      if (locationName === 'Reptér') {
+        const emiratesRef = doc(db, 'locations', 'Emirates');
+        const emiratesSnap = await getDoc(emiratesRef);
+
+        if (emiratesSnap.exists()) {
+          const emiratesMembers = emiratesSnap.data().members || [];
+          const isInEmirates = emiratesMembers.some((m: any) => m.uid === user.uid);
+
+          if (isInEmirates) {
+            console.log('Reptér check-in: swapping from Emirates to Reptér');
+            await checkoutFromLocation('Emirates', user.uid);
+          }
+        }
+      }
+
       // Parallel execution: checkout from all locations (EXCEPT the new one) AND check-in to new location
-      // Special case: Emirates is part of Reptér, so don't checkout from Reptér when checking into Emirates
-      const excludeLocations = locationName === 'Emirates' ? ['Emirates', 'Reptér'] : [locationName];
+      // Note: Emirates and Reptér swaps are handled above, so exclude both from general checkout
+      const excludeLocations = (locationName === 'Emirates' || locationName === 'Reptér')
+        ? ['Emirates', 'Reptér']
+        : [locationName];
 
       await Promise.all([
         checkoutFromAllLocations(user.uid, userProfile, locationName, excludeLocations),
