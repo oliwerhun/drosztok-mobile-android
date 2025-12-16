@@ -301,6 +301,12 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
   const handleFlameClick = async () => {
     if (!user || checkingIn) return;
 
+    // Disable Flame for Emirates (violates Reptér prerequisite rule)
+    if (locationName === 'Emirates') {
+      Alert.alert('Figyelem', 'Emirates sorból nem lehet visszavonni a kilépést. Először a Reptéri sorba kell bejelentkezned!');
+      return;
+    }
+
     if (!lastCheckedOut ||
       lastCheckedOut.memberData.uid !== user.uid ||
       lastCheckedOut.firestorePath !== resolvedFirestorePath ||
