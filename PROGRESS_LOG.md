@@ -2710,3 +2710,64 @@ onPress: async () => {
 
 ---
 *Implementálva: 2025.12.16. 08:47*
+
+## 2025.12.16. - Emirates Auto-Kick Bug Javítás (v1.0.66)
+
+### Probléma
+Bejelentkezés az Emirates sorba → megjelenik a listában → egy pillanat múlva eltűnik.
+
+### Gyökérok
+Az Emirates a **Reptér dokumentum része** (`locations/Reptér/emiratesMembers`), de a check-in logika:
+1. Bejelentkeztet az Emirates sorba
+2. **Párhuzamosan** hívja a `checkoutFromAllLocations(uid, profile, "Emirates")`
+3. Ez kiléptet **MINDEN** sorból, kivéve "Emirates"
+4. De mivel `locationName="Emirates"` != `"Reptér"`, kiléptet a **Reptér sorból is**
+5. Mivel az Emirates a Reptér része, ez törli a usert az `emiratesMembers` tömbből is
+
+### Megoldás
+
+**Módosított fájlok:**
+- `LocationService.ts` - `checkoutFromAllLocations` függvény
+- `LocationScreen.tsx` - Emirates check-in logika
+
+**Változtatások:**
+
+```typescript
+// LocationService.ts
+export const checkoutFromAllLocations = async (
+  uid: string, 
+  currentProfile?: any, 
+  excludeLocation?: string, 
+  excludeLocations?: string[]  // ÚJ paraméter
+) => {
+  // Merge single exclude and array excludes
+  const locationsToExclude = [
+    ...(excludeLocation ? [excludeLocation] : []),
+    ...(excludeLocations || [])
+  ];
+  
+  for (const location of LOCATIONS) {
+    if (locationsToExclude.includes(location)) {
+      continue; // Skip excluded locations
+    }
+    // ... checkout logic
+  }
+}
+
+// LocationScreen.tsx
+// Emirates check-in: exclude both Emirates AND Reptér
+const excludeLocations = locationName === 'Emirates' 
+  ? ['Emirates', 'Reptér'] 
+  : [locationName];
+
+await checkoutFromAllLocations(user.uid, userProfile, locationName, excludeLocations);
+```
+
+### Eredmény
+- ✅ Emirates check-in működik
+- ✅ User megmarad az Emirates sorban
+- ✅ User megmarad a Reptér sorban is (ha benne volt)
+- ✅ Kiléptetés többi sorból (Akadémia, Belváros, stb.)
+
+---
+*Implementálva: 2025.12.16. 08:52*
