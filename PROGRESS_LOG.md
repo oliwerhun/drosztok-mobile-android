@@ -1,5 +1,30 @@
 # DROSZTOK MOBILE - FEJLESZTÉSI NAPLÓ
-**Utolsó frissítés:** 2025-12-10 15:58
+**Utolsó frissítés:** 2025-12-16 17:12
+
+---
+
+## 2025.12.16. - v1.1.7: Reptér Tab Fix + Verziószám + Background Tracking
+
+### Változások
+1. **Reptér tab fix:** Non-admin userek számára is elérhető (ScaleDecorator hiba javítva)
+2. **Verziószám megjelenítés:** Profil tab alján látható: `1.1.7`
+3. **Háttér lokációkövetés:** Újra bekapcsolva (`DashboardScreen.tsx`)
+4. **Mock location detektálás:** Ideiglenesen KIKAPCSOLVA (későbbre halasztva)
+
+### Módosított fájlok
+- `src/screens/driver/LocationScreen.tsx`: Külön `renderItemAdmin` és `renderItemNonAdmin` függvények
+- `package.json`: verzió `1.1.7`
+- `src/screens/driver/DashboardScreen.tsx`: `startLocationTracking()` hívás visszaállítva
+- `src/components/PermissionGuard.tsx`: Mock location check kikommentálva
+
+### Működés
+- ✅ **Reptér tab:** Non-admin user is be tud lépni
+- ✅ **Verziószám:** Profil tab → lent: `1.1.7`
+- ✅ **Háttér tracking:** Fut a `LocationTrackingService`
+- ⏳ **Mock location:** Későbbre halasztva (túl komplex volt)
+
+---
+*Telepítve: 2025.12.16. 17:12*
 
 ---
 
