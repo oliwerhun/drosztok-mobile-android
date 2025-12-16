@@ -223,8 +223,8 @@ export default function DashboardScreen({ navigation }: any) {
     }
   };
 
-  // V18 RESTORE: useMemo optimalizáció a tab tartalomra
-  const locationContent = useMemo(() => {
+  // Render location content based on active tab
+  const getLocationContent = () => {
     switch (activeTab) {
       case 'Csillag':
         return <LocationScreen locationName="Csillag" gpsEnabled={true} />;
@@ -367,7 +367,7 @@ export default function DashboardScreen({ navigation }: any) {
           </View>
         );
     }
-  }, [activeTab, theme, userProfile, editLicensePlate, editUserType, savingProfile, showPicker, tabs]); // Függőségek
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -446,7 +446,7 @@ export default function DashboardScreen({ navigation }: any) {
       />
 
       <View style={styles.content}>
-        {locationContent}
+        {getLocationContent()}
       </View>
     </View>
   );
