@@ -315,10 +315,10 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
     };
 
     const handleUnlockMock = async () => {
-        await AsyncStorage.removeItem('IS_MOCKED_LOCATION');
-        setMockLocked(false);
-        setIsMocked(false);
-        checkPermissions();
+        // NE töröljük a flag-et! Csak ellenőrizzük újra!
+        // Ha a mock location tényleg ki van kapcsolva, a checkPermissions törli majd.
+        console.log("🔍 Mock unlock requested - re-checking permissions...");
+        await checkPermissions();
     };
 
 
