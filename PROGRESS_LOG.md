@@ -2771,3 +2771,44 @@ await checkoutFromAllLocations(user.uid, userProfile, locationName, excludeLocat
 
 ---
 *Implementálva: 2025.12.16. 08:52*
+
+## 2025.12.16. - Emirates Külön Geofence Zóna (v1.0.68)
+
+### Változtatások
+
+**1. Reptér zóna pontosítása:**
+- 7. pont: `47.41214381224064, 19.24518843978864`
+- 8. pont: `47.41496080471827, 19.240135446938314`
+
+**2. Emirates külön geofence zóna:**
+- Saját GPS polygon (11 pont)
+- Reptér alapján + 3 extra pont (kiterjesztett terület)
+- Extra pontok (3a, 3b, 3c) a 3. és 4. pont között:
+  - 3a: `47.4357860656793, 19.259100477392558`
+  - 3b: `47.43352831413943, 19.270397453495274`
+  - 3c: `47.420356166729064, 19.267530417989892`
+
+**3. Emirates Firebase struktúra:**
+- **Régi:** `locations/Reptér/emiratesMembers`
+- **Új:** `locations/Emirates/members` (saját dokumentum)
+
+**4. Emirates LocationScreen:**
+```tsx
+<LocationScreen
+  locationName="Emirates"
+  gpsEnabled={gpsEnabled}
+  firestorePath="locations/Emirates"  // Saját dokumentum
+  membersField="members"               // Saját members tömb
+  geofenceName="Emirates"              // Saját geofence
+/>
+```
+
+### Következő lépések (tervezés alatt)
+
+**Emirates szabályok:**
+1. Lehet-e egyszerre Reptér + Emirates sorban?
+2. Emirates check-in → kiléptetés Reptér sorból?
+3. Zóna elhagyás → kiléptetés mindkét sorból?
+
+---
+*Implementálva: 2025.12.16. 09:56*
