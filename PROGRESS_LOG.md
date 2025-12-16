@@ -2887,3 +2887,29 @@ if (locationName === 'Reptér') {
 
 ---
 *Implementálva: 2025.12.16. 10:18*
+
+## 2025.12.16. - Emirates Logout Checkout Javítás (v1.0.71)
+
+### Probléma
+Kijelentkezéskor az Emirates sorból nem léptetett ki a rendszer.
+
+### Gyökérok
+Az Emirates nem volt benne a `LOCATIONS` tömbben, ezért a `checkoutFromAllLocations` függvény nem ellenőrizte Emirates-t logout-kor.
+
+### Megoldás
+Hozzáadtam Emirates-t a LOCATIONS tömbhöz:
+
+```typescript
+// LocationService.ts
+export const LOCATIONS = [
+  'Akadémia', 'Belváros', 'Budai', 'Conti', 'Crowne', 'Kozmo', 
+  'Reptér', 'Emirates', 'V-Osztály', '213'
+];
+```
+
+### Eredmény
+- ✅ Logout → kiléptetés Emirates sorból
+- ✅ Logout → kiléptetés minden sorból (Reptér, Emirates, stb.)
+
+---
+*Javítva: 2025.12.16. 10:26*
