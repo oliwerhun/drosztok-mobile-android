@@ -2812,3 +2812,78 @@ await checkoutFromAllLocations(user.uid, userProfile, locationName, excludeLocat
 
 ---
 *Implementálva: 2025.12.16. 09:56*
+
+## 2025.12.16. - Emirates Sor Logika Implementálás (v1.0.69)
+
+### Funkció
+Emirates sor előfeltétellel és automatikus sor váltással.
+
+### Szabályok
+
+**1. Reptér Előfeltétel:**
+- Emirates sorba CSAK akkor lehet bejelentkezni, ha már Reptér sorban vagy
+- Ha nincs Reptér sorban → hibaüzenet: "Először a Reptéri sorba kell bejelentkezned!"
+
+**2. Sor Váltás (Tab + Be gomb):**
+- **Reptér → Emirates:** Reptér tab → Emirates tab → "Be" gomb → kilép Reptérből, belép Emirates-be
+- **Emirates → Reptér:** Emirates tab → Reptér tab → "Be" gomb → kilép Emirates-ből, belép Reptérbe
+- Nincs új gomb, a meglévő "Be" gomb kezeli a váltást
+
+**3. Auto-Checkout:**
+- Emirates zóna elhagyás (15s) → kiléptetés Emirates-ből
+- Reptér zóna elhagyás (15s) → kiléptetés Reptérből
+- Visszatérés után: MINDIG először Reptér sorba kell bejelentkezni
+
+### Implementáció
+
+**LocationService.ts:**
+```typescript
+export const checkoutFromLocation = async (
+  locationName: string, 
+  uid: string
+): Promise<void> => {
+  // Kiléptetés egy adott sorból (Emirates ↔ Reptér swap-hoz)
+}
+```
+
+**LocationScreen.tsx:**
+```typescript
+// Emirates prerequisite check
+if (locationName === 'Emirates') {
+  const repterSnap = await getDoc(doc(db, 'locations', 'Reptér'));
+  const isInRepter = repterSnap.data().members.some(m => m.uid === user.uid);
+  
+  if (!isInRepter) {
+    Alert.alert('Figyelem', 'Először a Reptéri sorba kell bejelentkezned!');
+    return;
+  }
+  
+  // Swap: Reptér → Emirates
+  await checkoutFromLocation('Reptér', user.uid);
+}
+
+// Reptér check-in: swap back from Emirates
+if (locationName === 'Reptér') {
+  const emiratesSnap = await getDoc(doc(db, 'locations', 'Emirates'));
+  const isInEmirates = emiratesSnap.data().members.some(m => m.uid === user.uid);
+  
+  if (isInEmirates) {
+    await checkoutFromLocation('Emirates', user.uid);
+  }
+}
+```
+
+### Tesztelési Forgatókönyvek
+
+1. **Előfeltétel:** Emirates "Be" gomb Emirates sorban lévő nélkül → Hibaüzenet ✅
+2. **Reptér → Emirates:** Reptér sorba be → Emirates tab → "Be" → Emirates sorban, Reptérből ki ✅
+3. **Emirates → Reptér:** Emirates sorban → Reptér tab → "Be" → Reptér sorban, Emirates-ből ki ✅
+4. **Auto-checkout:** Emirates sorban, zóna elhagyás, 15s → kiléptetés Emirates-ből ✅
+5. **Visszatérés:** Zóna elhagyás után Emirates "Be" → Hibaüzenet (először Reptér) ✅
+
+### Módosított fájlok
+- `/src/services/LocationService.ts` - `checkoutFromLocation` helper
+- `/src/screens/driver/LocationScreen.tsx` - Emirates logika
+
+---
+*Implementálva: 2025.12.16. 10:18*
