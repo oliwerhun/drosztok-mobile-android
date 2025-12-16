@@ -2954,3 +2954,76 @@ if (updatedLocalSessionId && updatedLocalSessionId !== remoteSessionId) {
 
 ---
 *Javítva: 2025.12.16. 10:32*
+
+## 2025.12.16. - Unused Apps Auto-Revoke Automatikus Ellenőrzés (v1.0.74)
+
+### Funkció
+"App szüneteltetése, ha nem használja" beállítás automatikus ellenőrzése a Permission Guard varázslóban.
+
+### Probléma
+- Korábban: Manuális megerősítés ("Megerősítem" gomb)
+- User nem tudta, hogy a kapcsoló be vagy ki van-e kapcsolva
+
+### Megoldás
+
+**Native Kotlin Module: UnusedAppsModule.kt**
+```kotlin
+@ReactMethod
+fun isWhitelisted(promise: Promise) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        val pm = reactApplicationContext.packageManager
+        val whitelisted = pm.isAutoRevokeWhitelisted
+        promise.resolve(whitelisted)
+    } else {
+        promise.resolve(true) // Android < 11: nincs ilyen funkció
+    }
+}
+
+@ReactMethod
+fun openSettings() {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+    intent.data = Uri.fromParts("package", packageName, null)
+    startActivity(intent)
+}
+```
+
+**PermissionGuard.tsx:**
+```typescript
+// Check unused apps status
+const isWhitelisted = await UnusedAppsModule.isWhitelisted();
+setIsUnusedAppsWhitelisted(isWhitelisted);
+
+// UI
+{isUnusedAppsWhitelisted ? (
+    <Text>✓ Kikapcsolva (Rendben)</Text>
+) : (
+    <Text>❌ Bekapcsolva (Kapcsold ki!)</Text>
+)}
+
+// Continue button
+<TouchableOpacity
+    disabled={!isUnusedAppsWhitelisted}
+    onPress={advanceStep}
+>
+```
+
+### API Logika
+- `isAutoRevokeWhitelisted = true` → Kapcsoló **OFF** → App exempt → **JÓ** ✅
+- `isAutoRevokeWhitelisted = false` → Kapcsoló **ON** → App hibernálva lesz → **ROSSZ** ❌
+
+### Működés
+1. Permission Guard megnyílik → ellenőrzi kapcsoló állapotát
+2. Ha **ON** → Tovább gomb inaktív, piros üzenet
+3. User: "Beállítások" gomb → app settings megnyílik
+4. User: Kapcsoló **OFF**-ra állítása
+5. Vissza az appba → automatikus újra ellenőrzés
+6. Kapcsoló **OFF** → Tovább gomb aktív, zöld pipa ✅
+7. Tovább → Akku beállítás lépés
+
+### Módosított fájlok
+- `android/app/src/main/java/hu/elitdroszt/mobile/UnusedAppsModule.kt` (ÚJ)
+- `android/app/src/main/java/hu/elitdroszt/mobile/AppPackage.java`
+- `src/components/PermissionGuard.tsx`
+
+---
+*Implementálva: 2025.12.16. 11:08*
