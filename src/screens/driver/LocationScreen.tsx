@@ -461,7 +461,8 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
     }
   };
 
-  const renderItem = ({ item, drag, isActive }: RenderItemParams<Member>) => {
+  // Render function for admin users (DraggableFlatList with ScaleDecorator)
+  const renderItemAdmin = ({ item, drag, isActive }: RenderItemParams<Member>) => {
     return (
       <ScaleDecorator>
         <View
@@ -474,16 +475,14 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
             },
           ]}
         >
-          {userProfile?.role === 'admin' && (
-            <TouchableOpacity
-              onLongPress={drag}
-              delayLongPress={100}
-              style={styles.dragHandle}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <Text style={[styles.dragIcon, { color: colors.textSecondary }]}>☰</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            onLongPress={drag}
+            delayLongPress={100}
+            style={styles.dragHandle}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={[styles.dragIcon, { color: colors.textSecondary }]}>☰</Text>
+          </TouchableOpacity>
 
           <View style={styles.memberInfo}>
             <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text, fontSize: fontSize }]}>
@@ -492,13 +491,34 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
             </Text>
           </View>
 
-          {userProfile?.role === 'admin' && (
-            <TouchableOpacity onPress={() => handleManualKick(item.uid)} style={styles.kickButton}>
-              <Ionicons name="close-circle" size={24} color="#ef4444" />
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={() => handleManualKick(item.uid)} style={styles.kickButton}>
+            <Ionicons name="close-circle" size={24} color="#ef4444" />
+          </TouchableOpacity>
         </View>
       </ScaleDecorator>
+    );
+  };
+
+  // Render function for non-admin users (FlatList without ScaleDecorator)
+  const renderItemNonAdmin = ({ item }: { item: Member }) => {
+    return (
+      <View
+        style={[
+          styles.memberItem,
+          {
+            backgroundColor: theme === 'dark' ? '#374151' : '#ffffff',
+            borderWidth: 1,
+            borderColor: theme === 'dark' ? '#4b5563' : '#e5e7eb'
+          },
+        ]}
+      >
+        <View style={styles.memberInfo}>
+          <Text style={[styles.memberName, { color: colors.text, fontSize: fontSize }]}>
+            {item.displayName || item.username}
+            {item.checkInTime ? ` - ${item.checkInTime}` : ''}
+          </Text>
+        </View>
+      </View>
     );
   };
 
@@ -547,7 +567,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
             data={members}
             onDragEnd={({ data }) => handleDragEnd(data)}
             keyExtractor={(item) => item.uid}
-            renderItem={renderItem}
+            renderItem={renderItemAdmin}
             ListHeaderComponent={
               loading ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
@@ -564,7 +584,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
           <FlatList
             data={members}
             keyExtractor={(item) => item.uid}
-            renderItem={({ item }) => renderItem({ item, drag: () => { }, isActive: false } as any)}
+            renderItem={renderItemNonAdmin}
             ListHeaderComponent={
               loading ? (
                 <View style={{ padding: 20, alignItems: 'center' }}>
