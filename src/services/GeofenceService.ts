@@ -270,6 +270,11 @@ class GeofenceService {
         if (!wasInside && isNowInside) {
           console.log(`GeofenceService: User returned to ${locationName}, canceling auto-checkout`);
           this.cancelAutoCheckoutTimer(locationName);
+
+          // Also cancel Emirates auto-checkout if user returned to Reptér
+          if (locationName === 'Reptér') {
+            this.cancelAutoCheckoutTimer('Emirates');
+          }
         }
       }
     });

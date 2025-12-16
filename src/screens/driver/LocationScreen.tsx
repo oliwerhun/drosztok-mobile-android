@@ -147,8 +147,11 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
       };
 
       // Parallel execution: checkout from all locations (EXCEPT the new one) AND check-in to new location
+      // Special case: Emirates is part of Reptér, so don't checkout from Reptér when checking into Emirates
+      const excludeLocations = locationName === 'Emirates' ? ['Emirates', 'Reptér'] : [locationName];
+
       await Promise.all([
-        checkoutFromAllLocations(user.uid, userProfile, locationName), // Pass locationName to exclude it
+        checkoutFromAllLocations(user.uid, userProfile, locationName, excludeLocations),
         setDoc(locationRef, { [resolvedMembersField]: arrayUnion(newMember) }, { merge: true })
       ]);
 

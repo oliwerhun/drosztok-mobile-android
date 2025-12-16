@@ -5,12 +5,18 @@ import { undoService } from './UndoService';
 
 export const LOCATIONS = ['Akadémia', 'Belváros', 'Budai', 'Conti', 'Crowne', 'Kozmo', 'Reptér', 'V-Osztály', '213'];
 
-export const checkoutFromAllLocations = async (uid: string, currentProfile?: any, excludeLocation?: string) => {
+export const checkoutFromAllLocations = async (uid: string, currentProfile?: any, excludeLocation?: string, excludeLocations?: string[]) => {
     if (!uid) return;
 
+    // Merge single exclude and array excludes
+    const locationsToExclude = [
+        ...(excludeLocation ? [excludeLocation] : []),
+        ...(excludeLocations || [])
+    ];
+
     for (const location of LOCATIONS) {
-        // Skip the excluded location (the one we're checking into)
-        if (excludeLocation && location === excludeLocation) {
+        // Skip excluded locations
+        if (locationsToExclude.includes(location)) {
             continue;
         }
 
