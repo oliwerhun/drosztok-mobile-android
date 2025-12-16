@@ -11,6 +11,7 @@ import AirportScreen from './AirportScreen';
 import OrdersTab213 from './OrdersTab213';
 import MapScreen from './MapScreen';
 import AdminScreen from './AdminScreen';
+import { checkoutFromAllLocations } from '../../services/LocationService';
 import { AppState } from 'react-native';
 import { updateUserDisplayNameInAllLocations } from '../../services/LocationService';
 import { startLocationTracking, stopLocationTracking } from '../../services/LocationTrackingService';
@@ -122,6 +123,12 @@ export default function DashboardScreen({ navigation }: any) {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Checkout from all queues before logout
+              if (userProfile?.uid) {
+                console.log('Logout: Checking out from all locations');
+                await checkoutFromAllLocations(userProfile.uid, userProfile);
+              }
+
               await stopLocationTracking();
               await signOut(auth);
             } catch (error) {
