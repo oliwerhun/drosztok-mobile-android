@@ -492,8 +492,25 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
 
           <View style={styles.memberInfo}>
             <Text style={[styles.memberName, { color: isActive ? '#ffffff' : colors.text, fontSize: fontSize }]}>
-              {item.displayName || item.username}
-              {item.checkInTime ? ` - ${item.checkInTime}` : ''}
+              {(() => {
+                const displayName = item.displayName || item.username;
+                const foodPhoneSuffix = ' 🍔📞';
+                const hasFoodPhone = displayName.includes(foodPhoneSuffix);
+
+                // Remove food/phone suffix temporarily
+                const nameWithoutIcons = hasFoodPhone
+                  ? displayName.replace(foodPhoneSuffix, '')
+                  : displayName;
+
+                // Build: name - time  icons
+                return (
+                  <>
+                    {nameWithoutIcons}
+                    {item.checkInTime ? ` - ${item.checkInTime}` : ''}
+                    {hasFoodPhone ? `  ${foodPhoneSuffix.trim()}` : ''}
+                  </>
+                );
+              })()}
             </Text>
           </View>
 
@@ -520,8 +537,25 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
       >
         <View style={styles.memberInfo}>
           <Text style={[styles.memberName, { color: colors.text, fontSize: fontSize }]}>
-            {item.displayName || item.username}
-            {item.checkInTime ? ` - ${item.checkInTime}` : ''}
+            {(() => {
+              const displayName = item.displayName || item.username;
+              const foodPhoneSuffix = ' 🍔📞';
+              const hasFoodPhone = displayName.includes(foodPhoneSuffix);
+              
+              // Remove food/phone suffix temporarily
+              const nameWithoutIcons = hasFoodPhone 
+                ? displayName.replace(foodPhoneSuffix, '')
+                : displayName;
+              
+              // Build: name - time  icons
+              return (
+                <>
+                  {nameWithoutIcons}
+                  {item.checkInTime ? ` - ${item.checkInTime}` : ''}
+                  {hasFoodPhone ? `  ${foodPhoneSuffix.trim()}` : ''}
+                </>
+              );
+            })()}
           </Text>
         </View>
       </View>
