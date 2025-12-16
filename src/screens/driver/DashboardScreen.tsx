@@ -404,6 +404,7 @@ export default function DashboardScreen({ navigation }: any) {
       </View>
 
       <DraggableFlatList
+        key="dashboard-tabs"
         data={tabs}
         horizontal
         onDragEnd={({ data }) => {
