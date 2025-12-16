@@ -3,7 +3,7 @@ import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { LocationMember } from '../screens/driver/LocationScreen';
 import { undoService } from './UndoService';
 
-export const LOCATIONS = ['Akadémia', 'Belváros', 'Budai', 'Conti', 'Crowne', 'Kozmo', 'Reptér', 'V-Osztály', '213'];
+export const LOCATIONS = ['Akadémia', 'Belváros', 'Budai', 'Conti', 'Crowne', 'Kozmo', 'Reptér', 'Emirates', 'V-Osztály', '213'];
 
 export const checkoutFromAllLocations = async (uid: string, currentProfile?: any, excludeLocation?: string, excludeLocations?: string[]) => {
     if (!uid) return;
