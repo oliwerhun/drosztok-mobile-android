@@ -3027,3 +3027,83 @@ setIsUnusedAppsWhitelisted(isWhitelisted);
 
 ---
 *Implementálva: 2025.12.16. 11:08*
+
+---
+
+# 🎉 MÉRFÖLDKŐ: v1.1.0 - Emirates & Permission Guard Tökéletesítés
+
+**Dátum:** 2025.12.16.
+**Verzió:** v1.1.0 (Milestone Release)
+
+## Főbb Eredmények
+
+### 1. Emirates Sor Teljes Implementáció ✅
+- **Külön geofence zóna** (11 pont, kiterjesztett Reptér alapján)
+- **Reptér előfeltétel:** Csak Reptér sorból lehet Emirates-be lépni
+- **Automatikus sor váltás:** Tab switch + Be gomb
+- **Flame gomb letiltva** Emirates-nél
+- **Logout checkout** Emirates-ből is
+
+### 2. Permission Guard - Unused Apps Auto-Detection ✅
+- **Native Kotlin module** (`UnusedAppsModule.kt`)
+- **Automatikus ellenőrzés:** `isAutoRevokeWhitelisted` API
+- **Valós idejű státusz:** ✅ Kikapcsolva / ❌ Bekapcsolva
+- **Tovább gomb logika:** Csak ha kapcsoló OFF
+- **Nincs manuális megerősítés** - teljes automatizmus
+
+### 3. Bug Fixes & Improvements
+- Session mismatch false positive javítás (2s delay)
+- Reptér zóna koordináták pontosítása
+- Emirates logout checkout
+- Flame gomb üzenet finomítás
+
+## Technikai Részletek
+
+### Emirates Queue System
+```typescript
+// Prerequisite check
+if (locationName === 'Emirates') {
+  const isInRepter = await checkRepterMembership(user.uid);
+  if (!isInRepter) {
+    Alert.alert('Először a Reptéri sorba kell bejelentkezned!');
+    return;
+  }
+  await checkoutFromLocation('Reptér', user.uid); // Swap
+}
+```
+
+### Unused Apps Detection
+```kotlin
+// UnusedAppsModule.kt
+@ReactMethod
+fun isWhitelisted(promise: Promise) {
+    val pm = packageManager
+    val whitelisted = pm.isAutoRevokeWhitelisted
+    promise.resolve(whitelisted) // true = OFF (good), false = ON (bad)
+}
+```
+
+## Verzió Történet (v1.0.64 → v1.1.0)
+
+- **v1.0.64-65:** Global auto-checkout implementáció
+- **v1.0.66:** Emirates auto-kick bug javítás
+- **v1.0.67:** Reptér zóna koordináták frissítés
+- **v1.0.68:** Emirates külön geofence zóna
+- **v1.0.69:** Emirates sor logika (prerequisite + swap)
+- **v1.0.70:** Flame gomb letiltás Emirates-nél
+- **v1.0.71:** Emirates logout checkout
+- **v1.0.72:** Session mismatch javítás
+- **v1.0.73:** Flame gomb üzenet frissítés
+- **v1.0.74:** **Unused Apps auto-detection** ← MILESTONE
+- **v1.1.0:** 🎉 **MÉRFÖLDKŐ VERZIÓ**
+
+## Következő Lépések
+
+- [ ] Tesztelés valós környezetben
+- [ ] User feedback gyűjtés
+- [ ] További Permission Guard finomítások
+- [ ] Performance optimalizáció
+
+---
+*Mérföldkő elérve: 2025.12.16. 11:13*
+
