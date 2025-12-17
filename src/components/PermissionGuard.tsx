@@ -310,19 +310,130 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
         if (!Device.manufacturer) return "";
         const m = Device.manufacturer.toLowerCase();
 
-        if (m.includes('samsung')) return "\n\nSamsung:\n\u2022 Akkumulátor: Nem korlátozott";
-        if (m.includes('huawei')) return "\n\nHuawei:\n\u2022 Beállítások -> Akkumulátor -> Alkalmazásindítás -> Elitdroszt -> Kapcsold KI (Kézi kezelés) -> Mindhárom pipa legyen BE (Automatikus indítás, Másodlagos indítás, Futtatás háttérben)";
-        if (m.includes('xiaomi') || m.includes('redmi') || m.includes('poco')) return "\n\nXiaomi / Redmi / Poco:\n\u2022 Beállítások -> Alkalmazások -> Alkalmazások kezelése -> Elitdroszt -> Akkumulátorkímélő -> Nincs korlátozás\n\u2022 ÉS: Engedélyek -> Automatikus indítás -> BE";
-        if (m.includes('oppo') || m.includes('realme') || m.includes('oneplus')) return "\n\nOppo / Realme / OnePlus:\n\u2022 Háttérben végzett tevékenység engedélyezése: ON";
-        if (m.includes('sony')) return "\n\nSony:\n\u2022 Beállítások -> Akkumulátor -> STAMINA üzemmód -> Kivételek -> Elitdroszt";
-        if (m.includes('lg')) return "\n\nLG:\n\u2022 Beállítások -> Általános -> Akkumulátor -> Energiatakarékos kivételek -> Elitdroszt";
-        if (m.includes('motorola')) return "\n\nMotorola:\n\u2022 Beállítások -> Akkumulátor -> Akkumulátoroptimalizálás -> Nincs optimalizálás";
+        if (m.includes('samsung')) {
+            return `\n\n📱 Samsung lépések:
+1. Beállítások → Alkalmazások
+2. Elitdroszt → Akkumulátor
+3. Válaszd: "Nem korlátozott"`;
+        }
 
-        return "";
+        if (m.includes('huawei')) {
+            return `\n\n📱 Huawei lépések:
+1. Beállítások → Akkumulátor
+2. Alkalmazásindítás → Elitdroszt
+3. Kapcsold KI (Kézi kezelés)
+4. Mind a 3 pipa legyen BE:
+   ✓ Automatikus indítás
+   ✓ Másodlagos indítás  
+   ✓ Futtatás háttérben`;
+        }
+
+        if (m.includes('xiaomi') || m.includes('redmi') || m.includes('poco')) {
+            return `\n\n📱 Xiaomi/Redmi/Poco lépések:
+1. Beállítások → Alkalmazások
+2. Alkalmazások kezelése → Elitdroszt
+3. Akkumulátorkímélő → "Nincs korlátozás"
+4. Engedélyek → Automatikus indítás → BE`;
+        }
+
+        if (m.includes('oppo') || m.includes('realme') || m.includes('oneplus')) {
+            return `\n\n📱 Oppo/Realme/OnePlus lépések:
+1. Beállítások → Alkalmazások → Elitdroszt
+2. Akkumulátorhasználat
+3. "Háttérben végzett tevékenység": BE`;
+        }
+
+        if (m.includes('sony')) {
+            return `\n\n📱 Sony lépések:
+1. Beállítások → Akkumulátor
+2. STAMINA üzemmód → Kivételek
+3. Add hozzá: Elitdroszt`;
+        }
+
+        if (m.includes('lg')) {
+            return `\n\n📱 LG lépések:
+1. Beállítások → Általános
+2. Akkumulátor → Energiatakarékos kivételek
+3. Add hozzá: Elitdroszt`;
+        }
+
+        if (m.includes('motorola')) {
+            return `\n\n📱 Motorola lépések:
+1. Beállítások → Akkumulátor
+2. Akkumulátoroptimalizálás
+3. Elitdroszt → "Nincs optimalizálás"`;
+        }
+
+        return `\n\n📱 Általános lépések:
+1. Beállítások → Alkalmazások → Elitdroszt
+2. Akkumulátor
+3. Állítsd "Nem korlátozott" módra`;
     };
 
     const getUnusedAppsTip = () => {
-        return "\n\nNem használt alkalmazások → App szüneteltetés, nem használja : KI";
+        if (!Device.manufacturer) return "";
+        const m = Device.manufacturer.toLowerCase();
+
+        if (m.includes('samsung')) {
+            return `\n\n📱 Samsung lépések:
+1. Beállítások → Alkalmazások
+2. Elitdroszt → Engedélyek
+3. Jobb felső sarok: ⋮ (három pont)
+4. "Nem haszn. alk. engedélyeinek eltáv." → KI`;
+        }
+
+        if (m.includes('xiaomi') || m.includes('redmi') || m.includes('poco')) {
+            return `\n\n📱 Xiaomi/Redmi/Poco lépések:
+1. Beállítások → Alkalmazások
+2. Alkalmazások kezelése → Elitdroszt
+3. Engedélyek
+4. "Engedélyek eltávolítása, ha nincs használatban" → KI`;
+        }
+
+        if (m.includes('huawei')) {
+            return `\n\n📱 Huawei megjegyzés:
+Huawei készülékeken nincs külön "Unused Apps" beállítás.
+Az "Alkalmazásindítás" beállítás (Battery step) elegendő.`;
+        }
+
+        if (m.includes('oppo') || m.includes('realme')) {
+            return `\n\n📱 Oppo/Realme lépések:
+1. Beállítások → Alkalmazások
+2. Alkalmazáslista → Elitdroszt
+3. "Szüneteltetés, ha nincs használatban" → KI`;
+        }
+
+        if (m.includes('oneplus')) {
+            return `\n\n📱 OnePlus lépések:
+1. Beállítások → Alkalmazások → Elitdroszt
+2. "Szüneteltetés, ha nincs használatban" → KI`;
+        }
+
+        if (m.includes('motorola')) {
+            return `\n\n📱 Motorola lépések:
+1. Beállítások → Alkalmazások → Elitdroszt
+2. Engedélyek
+3. "Engedélyek eltávolítása, ha nincs használatban" → KI`;
+        }
+
+        if (m.includes('lg')) {
+            return `\n\n📱 LG lépések:
+1. Beállítások → Alkalmazások → Elitdroszt
+2. Engedélyek
+3. "Engedélyek eltávolítása, ha nincs használatban" → KI`;
+        }
+
+        if (m.includes('sony')) {
+            return `\n\n📱 Sony lépések:
+1. Beállítások → Alkalmazások → Elitdroszt
+2. Engedélyek
+3. "Engedélyek eltávolítása, ha nincs használatban" → KI`;
+        }
+
+        return `\n\n📱 Általános lépések:
+1. Beállítások → Alkalmazások → Elitdroszt
+2. Engedélyek
+3. Keresd: "Engedélyek eltávolítása..." → KI`;
     };
 
     const handleUnlockMock = async () => {
