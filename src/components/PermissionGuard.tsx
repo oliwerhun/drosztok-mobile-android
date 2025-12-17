@@ -45,6 +45,7 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
     // true = whitelisted (switch OFF) = GOOD ✅
     // false = not whitelisted (switch ON) = BAD ❌
     const [isUnusedAppsWhitelisted, setIsUnusedAppsWhitelisted] = useState(false);
+    const [batteryManuallyConfirmed, setBatteryManuallyConfirmed] = useState(false);
 
     const [systemSettingsConfirmed, setSystemSettingsConfirmed] = useState(false);
     const [permissionsCompleted, setPermissionsCompleted] = useState(false);
@@ -310,130 +311,26 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
         if (!Device.manufacturer) return "";
         const m = Device.manufacturer.toLowerCase();
 
-        if (m.includes('samsung')) {
-            return `\n\n📱 Samsung lépések:
-1. Beállítások → Alkalmazások
-2. Elitdroszt → Akkumulátor
-3. Válaszd: "Nem korlátozott"`;
-        }
-
-        if (m.includes('huawei')) {
-            return `\n\n📱 Huawei lépések:
-1. Beállítások → Akkumulátor
-2. Alkalmazásindítás → Elitdroszt
-3. Kapcsold KI (Kézi kezelés)
-4. Mind a 3 pipa legyen BE:
-   ✓ Automatikus indítás
-   ✓ Másodlagos indítás  
-   ✓ Futtatás háttérben`;
-        }
-
-        if (m.includes('xiaomi') || m.includes('redmi') || m.includes('poco')) {
-            return `\n\n📱 Xiaomi/Redmi/Poco lépések:
-1. Beállítások → Alkalmazások
-2. Alkalmazások kezelése → Elitdroszt
-3. Akkumulátorkímélő → "Nincs korlátozás"
-4. Engedélyek → Automatikus indítás → BE`;
-        }
-
-        if (m.includes('oppo') || m.includes('realme') || m.includes('oneplus')) {
-            return `\n\n📱 Oppo/Realme/OnePlus lépések:
-1. Beállítások → Alkalmazások → Elitdroszt
-2. Akkumulátorhasználat
-3. "Háttérben végzett tevékenység": BE`;
-        }
-
-        if (m.includes('sony')) {
-            return `\n\n📱 Sony lépések:
-1. Beállítások → Akkumulátor
-2. STAMINA üzemmód → Kivételek
-3. Add hozzá: Elitdroszt`;
-        }
-
-        if (m.includes('lg')) {
-            return `\n\n📱 LG lépések:
-1. Beállítások → Általános
-2. Akkumulátor → Energiatakarékos kivételek
-3. Add hozzá: Elitdroszt`;
-        }
-
-        if (m.includes('motorola')) {
-            return `\n\n📱 Motorola lépések:
-1. Beállítások → Akkumulátor
-2. Akkumulátoroptimalizálás
-3. Elitdroszt → "Nincs optimalizálás"`;
-        }
-
-        return `\n\n📱 Általános lépések:
-1. Beállítások → Alkalmazások → Elitdroszt
-2. Akkumulátor
-3. Állítsd "Nem korlátozott" módra`;
+        if (m.includes('samsung')) return "\n\nNem korlátozott";
+        if (m.includes('huawei')) return "\n\nAlkalmazásindítás: Kézi kezelés (KI) + Mind a 3 pipa BE";
+        if (m.includes('xiaomi') || m.includes('redmi') || m.includes('poco')) return "\n\nNincs korlátozás + Automatikus indítás BE";
+        if (m.includes('oppo') || m.includes('realme') || m.includes('oneplus')) return "\n\nHáttérben végzett tevékenység: BE";
+        if (m.includes('sony')) return "\n\nSTAMINA üzemmód kivételek";
+        if (m.includes('lg')) return "\n\nEnergiatakarékos kivételek";
+        if (m.includes('motorola')) return "\n\nNincs optimalizálás";
+        return "\n\nNem korlátozott";
     };
 
     const getUnusedAppsTip = () => {
         if (!Device.manufacturer) return "";
         const m = Device.manufacturer.toLowerCase();
 
-        if (m.includes('samsung')) {
-            return `\n\n📱 Samsung lépések:
-1. Beállítások → Alkalmazások
-2. Elitdroszt → Engedélyek
-3. Jobb felső sarok: ⋮ (három pont)
-4. "Nem haszn. alk. engedélyeinek eltáv." → KI`;
-        }
-
-        if (m.includes('xiaomi') || m.includes('redmi') || m.includes('poco')) {
-            return `\n\n📱 Xiaomi/Redmi/Poco lépések:
-1. Beállítások → Alkalmazások
-2. Alkalmazások kezelése → Elitdroszt
-3. Engedélyek
-4. "Engedélyek eltávolítása, ha nincs használatban" → KI`;
-        }
-
-        if (m.includes('huawei')) {
-            return `\n\n📱 Huawei megjegyzés:
-Huawei készülékeken nincs külön "Unused Apps" beállítás.
-Az "Alkalmazásindítás" beállítás (Battery step) elegendő.`;
-        }
-
-        if (m.includes('oppo') || m.includes('realme')) {
-            return `\n\n📱 Oppo/Realme lépések:
-1. Beállítások → Alkalmazások
-2. Alkalmazáslista → Elitdroszt
-3. "Szüneteltetés, ha nincs használatban" → KI`;
-        }
-
-        if (m.includes('oneplus')) {
-            return `\n\n📱 OnePlus lépések:
-1. Beállítások → Alkalmazások → Elitdroszt
-2. "Szüneteltetés, ha nincs használatban" → KI`;
-        }
-
-        if (m.includes('motorola')) {
-            return `\n\n📱 Motorola lépések:
-1. Beállítások → Alkalmazások → Elitdroszt
-2. Engedélyek
-3. "Engedélyek eltávolítása, ha nincs használatban" → KI`;
-        }
-
-        if (m.includes('lg')) {
-            return `\n\n📱 LG lépések:
-1. Beállítások → Alkalmazások → Elitdroszt
-2. Engedélyek
-3. "Engedélyek eltávolítása, ha nincs használatban" → KI`;
-        }
-
-        if (m.includes('sony')) {
-            return `\n\n📱 Sony lépések:
-1. Beállítások → Alkalmazások → Elitdroszt
-2. Engedélyek
-3. "Engedélyek eltávolítása, ha nincs használatban" → KI`;
-        }
-
-        return `\n\n📱 Általános lépések:
-1. Beállítások → Alkalmazások → Elitdroszt
-2. Engedélyek
-3. Keresd: "Engedélyek eltávolítása..." → KI`;
+        if (m.includes('samsung')) return "\n\nNem haszn. alk. engedélyeinek eltáv. → KI";
+        if (m.includes('xiaomi') || m.includes('redmi') || m.includes('poco')) return "\n\nEngedélyek eltávolítása, ha nincs használatban → KI";
+        if (m.includes('huawei')) return "\n\nNincs külön beállítás (elegendő az Alkalmazásindítás)";
+        if (m.includes('oppo') || m.includes('realme') || m.includes('oneplus')) return "\n\nSzüneteltetés, ha nincs használatban → KI";
+        if (m.includes('motorola') || m.includes('lg') || m.includes('sony')) return "\n\nEngedélyek eltávolítása, ha nincs használatban → KI";
+        return "\n\nEngedélyek eltávolítása, ha nincs használatban → KI";
     };
 
     const handleUnlockMock = async () => {
@@ -552,6 +449,7 @@ Az "Alkalmazásindítás" beállítás (Battery step) elegendő.`;
                 );
 
             case 'battery':
+                const batteryStepComplete = isBatteryWhitelisted || batteryManuallyConfirmed;
                 return (
                     <View style={styles.stepContainer}>
                         <Ionicons name="battery-dead" size={80} color="#ef4444" />
@@ -573,10 +471,26 @@ Az "Alkalmazásindítás" beállítás (Battery step) elegendő.`;
                             )}
                         </View>
 
+                        {!isBatteryWhitelisted && (
+                            <TouchableOpacity
+                                style={styles.checkboxContainer}
+                                onPress={() => setBatteryManuallyConfirmed(!batteryManuallyConfirmed)}
+                            >
+                                <View style={[styles.checkbox, batteryManuallyConfirmed && styles.checkboxChecked]}>
+                                    {batteryManuallyConfirmed && (
+                                        <Ionicons name="checkmark" size={18} color="#ffffff" />
+                                    )}
+                                </View>
+                                <Text style={styles.checkboxLabel}>
+                                    Megerősítem, hogy beállítottam
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
                         <TouchableOpacity
-                            style={[styles.nextButton, !isBatteryWhitelisted && styles.disabledButton]}
+                            style={[styles.nextButton, !batteryStepComplete && styles.disabledButton]}
                             onPress={advanceStep}
-                            disabled={!isBatteryWhitelisted}
+                            disabled={!batteryStepComplete}
                         >
                             <Text style={styles.nextButtonText}>Kész</Text>
                         </TouchableOpacity>
