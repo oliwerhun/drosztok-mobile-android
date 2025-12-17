@@ -45,7 +45,6 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
     // true = whitelisted (switch OFF) = GOOD ✅
     // false = not whitelisted (switch ON) = BAD ❌
     const [isUnusedAppsWhitelisted, setIsUnusedAppsWhitelisted] = useState(false);
-    const [batteryManuallyConfirmed, setBatteryManuallyConfirmed] = useState(false);
 
     const [systemSettingsConfirmed, setSystemSettingsConfirmed] = useState(false);
     const [permissionsCompleted, setPermissionsCompleted] = useState(false);
@@ -194,10 +193,12 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
 
             // Check All Met
             const isIos = Platform.OS === 'ios';
+            const isSamsung = Device.manufacturer?.toLowerCase().includes('samsung');
+            const batteryOk = isSamsung ? true : isBatteryWhitelisted;
             const allMet =
                 bgStatus === 'granted' &&
                 notifStatus === 'granted' &&
-                (isIos || (isBatteryWhitelisted && systemSettingsConfirmed));
+                (isIos || (batteryOk && systemSettingsConfirmed));
 
             if (allMet) {
                 logger.log('Permissions Granted, entering app');
@@ -449,7 +450,8 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                 );
 
             case 'battery':
-                const batteryStepComplete = isBatteryWhitelisted || batteryManuallyConfirmed;
+                const isSamsung = Device.manufacturer?.toLowerCase().includes('samsung');
+                const batteryStepComplete = isSamsung ? true : isBatteryWhitelisted;
                 return (
                     <View style={styles.stepContainer}>
                         <Ionicons name="battery-dead" size={80} color="#ef4444" />
@@ -471,21 +473,7 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                             )}
                         </View>
 
-                        {!isBatteryWhitelisted && (
-                            <TouchableOpacity
-                                style={styles.checkboxContainer}
-                                onPress={() => setBatteryManuallyConfirmed(!batteryManuallyConfirmed)}
-                            >
-                                <View style={[styles.checkbox, batteryManuallyConfirmed && styles.checkboxChecked]}>
-                                    {batteryManuallyConfirmed && (
-                                        <Ionicons name="checkmark" size={18} color="#ffffff" />
-                                    )}
-                                </View>
-                                <Text style={styles.checkboxLabel}>
-                                    Megerősítem, hogy beállítottam
-                                </Text>
-                            </TouchableOpacity>
-                        )}
+
 
                         <TouchableOpacity
                             style={[styles.nextButton, !batteryStepComplete && styles.disabledButton]}
