@@ -50,6 +50,7 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
     const [permissionsCompleted, setPermissionsCompleted] = useState(false);
     const [isMocked, setIsMocked] = useState(false);
     const [mockLocked, setMockLocked] = useState(false);
+    const [batterySettingsOpened, setBatterySettingsOpened] = useState(false);
 
     const appState = useRef(AppState.currentState);
 
@@ -159,7 +160,7 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                     setIsBatteryWhitelisted(isWhitelisted);
                 } catch (e) {
                     console.log('Battery check failed', e);
-                    setIsBatteryWhitelisted(true); // Fallback to allow usage if check fails
+                    setIsBatteryWhitelisted(false); // Don't auto-allow on error - require wizard completion
                 }
             } else {
                 setIsBatteryWhitelisted(true); // iOS or no module
@@ -194,11 +195,24 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
             // Check All Met
             const isIos = Platform.OS === 'ios';
             const isSamsung = Device.manufacturer?.toLowerCase().includes('samsung');
-            const batteryOk = isSamsung ? true : isBatteryWhitelisted;
+            // Samsung: only require systemSettingsConfirmed (battery check unreliable)
+            // Other Android: require both isBatteryWhitelisted AND systemSettingsConfirmed
+            const batteryOk = isSamsung ? systemSettingsConfirmed : (isBatteryWhitelisted && systemSettingsConfirmed);
             const allMet =
                 bgStatus === 'granted' &&
                 notifStatus === 'granted' &&
-                (isIos || (batteryOk && systemSettingsConfirmed));
+                (isIos || batteryOk);
+
+            console.log('🔍 [PERMISSION CHECK]', {
+                bgStatus,
+                notifStatus,
+                isIos,
+                manufacturer: Device.manufacturer,
+                systemSettingsConfirmed,
+                isBatteryWhitelisted,
+            });
+
+            console.log('🔍 [ALL MET]', allMet);
 
             if (allMet) {
                 logger.log('Permissions Granted, entering app');
@@ -265,6 +279,36 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
         }
     };
 
+    const handleBatteryAction = async () => {
+        try {
+            await BatteryOptimization.openBatterySettings();
+            setBatterySettingsOpened(true); // Mark that user opened settings
+            // When user returns from settings, Kész button will appear
+        } catch (e) {
+            console.log('Failed to open battery settings', e);
+        }
+    };
+
+    // Auto-advance from battery step when user returns from settings
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+                // User returned to app
+                if (currentStep === 'battery') {
+                    console.log('🔍 [AUTO-ADVANCE] User returned from battery settings, advancing to completed');
+                    setSystemSettingsConfirmed(true);
+                    AsyncStorage.setItem(SETTINGS_CONFIRMED_KEY, 'true');
+                    setCurrentStep('completed');
+                }
+            }
+            appState.current = nextAppState;
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [currentStep]);
+
     // --- STEP ACTIONS ---
 
     const handleLocationAction = async () => {
@@ -283,25 +327,24 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
         if (status !== 'granted') handleOpenSettings();
     };
 
-    const handleBatteryAction = async () => {
-        // A felhasználó kérése: "alkalmazásinformáció akkumulátor menübe vigye"
-        // Ez általában a handleOpenSettings (App Info) -> Akkumulátor almenü manuális választása
-        handleOpenSettings();
-    };
 
     const advanceStep = () => {
+        console.log('🔍 [ADVANCE STEP]', { currentStep, platformOS: Platform.OS });
         if (currentStep === 'location') setCurrentStep('notification');
         else if (currentStep === 'notification') {
             if (Platform.OS === 'ios') {
+                console.log('🔍 [iOS BRANCH] Setting systemSettingsConfirmed = true');
                 setSystemSettingsConfirmed(true);
                 AsyncStorage.setItem(SETTINGS_CONFIRMED_KEY, 'true');
                 setCurrentStep('completed');
             } else {
+                console.log('🔍 [ANDROID BRANCH] Moving to unused_apps');
                 setCurrentStep('unused_apps');
             }
         }
         else if (currentStep === 'unused_apps') setCurrentStep('battery');
         else if (currentStep === 'battery') {
+            console.log('🔍 [BATTERY COMPLETE] Setting systemSettingsConfirmed = true');
             setSystemSettingsConfirmed(true);
             AsyncStorage.setItem(SETTINGS_CONFIRMED_KEY, 'true');
             setCurrentStep('completed');
@@ -450,14 +493,12 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                 );
 
             case 'battery':
-                const isSamsung = Device.manufacturer?.toLowerCase().includes('samsung');
-                const batteryStepComplete = isSamsung ? true : isBatteryWhitelisted;
                 return (
                     <View style={styles.stepContainer}>
                         <Ionicons name="battery-dead" size={80} color="#ef4444" />
                         <Text style={styles.bigText}>
                             Akkumulátorhasználat{"\n"}
-                            <Text style={styles.subText}>Kérlek állítsd nem korlátozott módba</Text>
+                            <Text style={styles.subText}>Állítsd át 'Nem korlátozott' beállításra</Text>
                             <Text style={styles.tipText}>{getManufacturerTip()}</Text>
                         </Text>
 
@@ -465,23 +506,11 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                             <Text style={styles.mainButtonText}>Beállítások megnyitása</Text>
                         </TouchableOpacity>
 
-                        <View style={{ marginTop: 10, alignItems: 'center' }}>
-                            {isBatteryWhitelisted ? (
-                                <Text style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Rendszer szerint OK!</Text>
-                            ) : (
-                                <Text style={{ color: '#ef4444', fontSize: 12 }}>Rendszer szerint még korlátozva van</Text>
-                            )}
-                        </View>
-
-
-
-                        <TouchableOpacity
-                            style={[styles.nextButton, !batteryStepComplete && styles.disabledButton]}
-                            onPress={advanceStep}
-                            disabled={!batteryStepComplete}
-                        >
-                            <Text style={styles.nextButtonText}>Kész</Text>
-                        </TouchableOpacity>
+                        {batterySettingsOpened && (
+                            <TouchableOpacity style={styles.nextButton} onPress={advanceStep}>
+                                <Text style={styles.nextButtonText}>Kész</Text>
+                            </TouchableOpacity>
+                        )}
                     </View>
                 );
 
