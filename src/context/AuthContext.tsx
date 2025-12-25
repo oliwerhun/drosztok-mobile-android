@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useRef } from 'react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth'; // Added signOut
 import { doc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore'; // Added onSnapshot
 import { auth, db } from '../config/firebase';
@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const previousSessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     // console.log('AuthContext: useEffect started');
@@ -66,7 +67,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const data = docSnap.data();
           const remoteSessionId = data.sessionId;
 
-          if (remoteSessionId) {
+          // Only check if sessionId actually changed
+          if (remoteSessionId && remoteSessionId !== previousSessionIdRef.current) {
+            console.log('🔐 [SESSION] SessionId changed, checking validity');
+            previousSessionIdRef.current = remoteSessionId;
+
             const localSessionId = await AsyncStorage.getItem('sessionId');
 
             // Wait 2 seconds to avoid race condition with login sessionId update
@@ -91,6 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               Alert.alert("Biztonsági Figyelmeztetés", "Bejelentkeztél egy másik eszközön. Ezen az eszközön kiléptettünk a sorból.");
               await signOut(auth);
               await AsyncStorage.removeItem('sessionId');
+            } else {
+              console.log('✅ [SESSION] Session ID matches, continuing');
             }
           }
         }
