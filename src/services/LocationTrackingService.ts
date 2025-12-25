@@ -26,11 +26,21 @@ const checkDriverActivity = async () => {
 
     // Check if 2 minutes (or 55 minutes in production) have passed
     if (elapsed >= HEARTBEAT_INTERVAL) {
+        const appState = AppState.currentState;
+        console.log('⏰ [HEARTBEAT] 2 minutes elapsed, app state:', appState);
+        
+        // If app is in foreground, just reset timestamp and continue
+        if (appState === 'active') {
+            console.log('✅ [HEARTBEAT] App active, resetting timer without notification');
+            await AsyncStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+            return;
+        }
+        
         const pending = await AsyncStorage.getItem(HEARTBEAT_RESPONSE_KEY);
 
         // Only trigger if not already pending
         if (!pending) {
-            console.log('⏰ [HEARTBEAT] 2 minutes elapsed, triggering notification');
+            console.log('📬 [HEARTBEAT] App in background, sending notification');
             await AsyncStorage.setItem(HEARTBEAT_RESPONSE_KEY, now.toString());
 
             // Send notification
