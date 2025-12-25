@@ -2,7 +2,7 @@
   "expo": {
     "name": "Elitdroszt",
     "slug": "elitdroszt",
-    "version": "1.5.0",
+    "version": "1.5.3",
     "versionCode": 17,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -31,8 +31,29 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "hu.elitdroszt.mobile"
+      "package": "hu.elitdroszt.mobile",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+        "WAKE_LOCK",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM"
+      ]
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "expo-notifications",
+      "expo-font"
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }
