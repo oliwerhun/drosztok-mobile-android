@@ -8,8 +8,8 @@ interface FontSizeContextType {
     decreaseFontSize: () => void;
 }
 
-const FONT_SIZES = [16, 18, 20, 22]; // 4 steps
-const DEFAULT_LEVEL = 0;
+const FONT_SIZES = [14, 16, 18, 20]; // 4 steps
+const DEFAULT_LEVEL = 0; // Starts at 14
 
 const FontSizeContext = createContext<FontSizeContextType | undefined>(undefined);
 

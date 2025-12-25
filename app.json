@@ -2,8 +2,8 @@
   "expo": {
     "name": "Elitdroszt",
     "slug": "elitdroszt",
-    "version": "1.6.3",
-    "versionCode": 20,
+    "version": "1.6.4",
+    "versionCode": 21,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
