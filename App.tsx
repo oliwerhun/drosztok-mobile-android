@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from './src/context/AuthContext';
@@ -31,10 +33,22 @@ export default function App() {
       }
     });
 
+    // Check for pending heartbeat when coming to foreground
+    const appStateSubscription = AppState.addEventListener('change', async (nextAppState) => {
+      if (nextAppState === 'active') {
+        const pending = await AsyncStorage.getItem('heartbeat_pending');
+        if (pending) {
+          console.log('👀 [APP] Resumed with pending heartbeat -> Showing Dialog');
+          setShowHeartbeatDialog(true);
+        }
+      }
+    });
+
     return () => {
       console.log('App: Stopping GeofenceService');
       GeofenceService.stopTracking();
       subscription.remove();
+      appStateSubscription.remove();
     };
   }, []);
 
