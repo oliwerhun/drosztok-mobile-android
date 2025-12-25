@@ -20,11 +20,26 @@ const checkDriverActivity = async () => {
     const HEARTBEAT_INTERVAL = 2 * 60 * 1000; // 2 minutes for testing (change to 55 * 60 * 1000 for production)
     const HEARTBEAT_TIMEOUT = 4 * 60 * 1000; // 4 minutes
 
-    const lastActivity = await AsyncStorage.getItem(LAST_ACTIVITY_KEY);
     const now = Date.now();
+
+    // 1. Check if we have a pending heartbeat timeout
+    const pending = await AsyncStorage.getItem(HEARTBEAT_RESPONSE_KEY);
+    if (pending) {
+        const pendingTime = parseInt(pending);
+        const timeSinceNotification = now - pendingTime;
+
+        if (timeSinceNotification >= HEARTBEAT_TIMEOUT) {
+            console.log('⏱️ [HEARTBEAT] Timeout reached (polling) - logging out');
+            const { handleHeartbeatTimeout } = require('./HeartbeatService');
+            await handleHeartbeatTimeout();
+            return; // Exit after handling timeout
+        }
+    }
+
+    // 2. Check if we need to trigger a new heartbeat
+    const lastActivity = await AsyncStorage.getItem(LAST_ACTIVITY_KEY);
     const elapsed = now - parseInt(lastActivity || '0');
 
-    // Check if 2 minutes (or 55 minutes in production) have passed
     if (elapsed >= HEARTBEAT_INTERVAL) {
         const appState = AppState.currentState;
         console.log('⏰ [HEARTBEAT] 2 minutes elapsed, app state:', appState);
@@ -33,14 +48,17 @@ const checkDriverActivity = async () => {
         if (appState === 'active') {
             console.log('✅ [HEARTBEAT] App active, resetting timer without notification');
             await AsyncStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+            // Clear pending if it was somehow set
+            if (pending) {
+                await AsyncStorage.removeItem(HEARTBEAT_RESPONSE_KEY);
+            }
             return;
         }
-
-        const pending = await AsyncStorage.getItem(HEARTBEAT_RESPONSE_KEY);
 
         // Only trigger if not already pending
         if (!pending) {
             console.log('📬 [HEARTBEAT] App in background, sending notification');
+            // Store CURRENT TIME as the start of the pending period
             await AsyncStorage.setItem(HEARTBEAT_RESPONSE_KEY, now.toString());
 
             // Send notification
@@ -55,17 +73,6 @@ const checkDriverActivity = async () => {
                 },
                 trigger: null,
             });
-
-            // Start 4-minute timeout check
-            setTimeout(async () => {
-                const stillPending = await AsyncStorage.getItem(HEARTBEAT_RESPONSE_KEY);
-                if (stillPending) {
-                    console.log('⏱️ [HEARTBEAT] Timeout - no response, logging out');
-                    // Import and call timeout handler
-                    const { handleHeartbeatTimeout } = await import('./HeartbeatService');
-                    await handleHeartbeatTimeout();
-                }
-            }, HEARTBEAT_TIMEOUT);
         }
     }
 };
