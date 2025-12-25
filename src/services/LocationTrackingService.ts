@@ -17,7 +17,7 @@ const GEOFENCE_VIOLATION_KEY = 'GEOFENCE_VIOLATION_COUNT';
 const checkDriverActivity = async () => {
     const LAST_ACTIVITY_KEY = 'last_activity_timestamp';
     const HEARTBEAT_RESPONSE_KEY = 'heartbeat_pending';
-    const HEARTBEAT_INTERVAL = 2 * 60 * 1000; // 2 minutes for testing (change to 55 * 60 * 1000 for production)
+    const HEARTBEAT_INTERVAL = 55 * 60 * 1000; // 55 minutes for production
     const HEARTBEAT_TIMEOUT = 4 * 60 * 1000; // 4 minutes
 
     const now = Date.now();
