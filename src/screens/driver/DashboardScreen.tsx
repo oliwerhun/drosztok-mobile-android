@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { signOut } from 'firebase/auth';
 import { auth, db } from '../../config/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import LocationScreen from './LocationScreen';
 import VClassScreen from './VClassScreen';
 import AirportScreen from './AirportScreen';
@@ -38,7 +38,6 @@ const DEFAULT_TAB_ORDER: Tab[] = [
   { id: 'repter', label: 'Reptér' },
   { id: 'vclass', label: 'V-Osztály' },
   { id: '213', label: '213' },
-  { id: 'csillag', label: 'Csillag' },
   { id: 'terkep', label: 'Térkép' },
   { id: 'admin', label: 'Admin' },
   { id: 'profil', label: 'Profil' },
@@ -86,14 +85,10 @@ export default function DashboardScreen({ navigation }: any) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
-  // Set Csillag as active tab if user is 646 and tab is available
   useEffect(() => {
     if (userProfile) {
       setEditLicensePlate(userProfile.licensePlate || '');
       setEditUserType(userProfile.userType || 'Taxi');
-      if (userProfile.username === '646' && activeTab !== 'Csillag' && activeTab === 'Akadémia') {
-        setActiveTab('Csillag');
-      }
     }
   }, [userProfile]);
 
@@ -177,6 +172,11 @@ export default function DashboardScreen({ navigation }: any) {
               if (userProfile?.uid) {
                 console.log('Logout: Checking out from all locations');
                 await checkoutFromAllLocations(userProfile.uid, userProfile);
+
+                // Delete driver location to remove from map
+                const locationRef = doc(db, 'driver_locations', userProfile.uid);
+                await deleteDoc(locationRef);
+                console.log('Logout: Removed driver location from map');
               }
 
               // Remove USER_ID to stop background location updates
@@ -239,8 +239,6 @@ export default function DashboardScreen({ navigation }: any) {
   // Render location content based on active tab
   const getLocationContent = () => {
     switch (activeTab) {
-      case 'Csillag':
-        return <LocationScreen locationName="Csillag" gpsEnabled={true} />;
       case 'Akadémia':
         return <LocationScreen locationName="Akadémia" gpsEnabled={true} />;
       case 'Belváros':

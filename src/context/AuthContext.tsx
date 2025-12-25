@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import { onAuthStateChanged, User, signOut } from 'firebase/auth'; // Added signOut
-import { doc, getDoc, onSnapshot } from 'firebase/firestore'; // Added onSnapshot
+import { doc, getDoc, onSnapshot, deleteDoc } from 'firebase/firestore'; // Added onSnapshot
 import { auth, db } from '../config/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Added AsyncStorage
 import { Alert } from 'react-native'; // Added Alert
@@ -82,6 +82,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
               // Checkout from all locations before logging out
               await checkoutFromAllLocations(user.uid, data as UserProfile);
+
+              // Delete driver location to remove from map
+              const locationRef = doc(db, 'driver_locations', user.uid);
+              await deleteDoc(locationRef);
+              console.log('Session Mismatch: Removed driver location from map');
 
               Alert.alert("Biztonsági Figyelmeztetés", "Bejelentkeztél egy másik eszközön. Ezen az eszközön kiléptettünk a sorból.");
               await signOut(auth);
