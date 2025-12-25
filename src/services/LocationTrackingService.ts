@@ -205,9 +205,15 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 export const startLocationTracking = async () => {
     logger.log('Starting Tracking Service...');
 
-    // Initialize heartbeat timestamp when tracking starts
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
+    if (isRegistered) {
+        console.log('Location tracking task already registered');
+        return true;
+    }
+
+    // Initialize heartbeat timestamp only when starting NEW tracking
     await AsyncStorage.setItem('last_activity_timestamp', Date.now().toString());
-    console.log('🔄 [HEARTBEAT] Initialized activity timestamp');
+    console.log('🔄 [HEARTBEAT] Initialized activity timestamp (New Session)');
 
     const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
     if (foregroundStatus !== 'granted') {
