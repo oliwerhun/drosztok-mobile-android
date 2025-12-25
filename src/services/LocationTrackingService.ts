@@ -128,8 +128,13 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                     }, { merge: true });
                     console.log('✅ [BG TASK] Firebase updated successfully!');
 
-                    // 1.5 Check Driver Activity
-                    await checkDriverActivity();
+                    // 1.5 Check Driver Activity (wrapped in try-catch to prevent task crash)
+                    try {
+                        await checkDriverActivity();
+                    } catch (error) {
+                        console.log('⚠️ [BG TASK] checkDriverActivity error (non-fatal):', error);
+                    }
+
 
                     // 2. Check Geofence if user is checked in
                     const checkInData = await AsyncStorage.getItem(ACTIVE_CHECKIN_KEY);
