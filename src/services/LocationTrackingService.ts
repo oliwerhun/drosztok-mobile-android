@@ -208,7 +208,6 @@ export const startLocationTracking = async () => {
         foregroundService: {
             notificationTitle: "Elitdroszt",
             notificationBody: "Be vagy jelentkezve.",
-            notificationColor: "#00000000", // Transparent
         },
     });
     console.log('Background location tracking started');
