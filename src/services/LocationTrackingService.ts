@@ -1,4 +1,5 @@
 import * as TaskManager from 'expo-task-manager';
+import { AppState } from 'react-native';
 import * as Location from 'expo-location';
 import { doc, setDoc, deleteDoc, updateDoc, arrayRemove, getDoc } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
@@ -193,6 +194,11 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
 
 export const startLocationTracking = async () => {
     logger.log('Starting Tracking Service...');
+
+    // Initialize heartbeat timestamp when tracking starts
+    await AsyncStorage.setItem('last_activity_timestamp', Date.now().toString());
+    console.log('🔄 [HEARTBEAT] Initialized activity timestamp');
+
     const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
     if (foregroundStatus !== 'granted') {
         console.log('Foreground location permission denied');
