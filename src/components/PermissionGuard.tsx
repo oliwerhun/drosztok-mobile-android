@@ -194,14 +194,12 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
 
             // Check All Met
             const isIos = Platform.OS === 'ios';
-            const isSamsung = Device.manufacturer?.toLowerCase().includes('samsung');
-            // Samsung: only require systemSettingsConfirmed (battery check unreliable)
-            // Other Android: require both isBatteryWhitelisted AND systemSettingsConfirmed
-            const batteryOk = isSamsung ? systemSettingsConfirmed : (isBatteryWhitelisted && systemSettingsConfirmed);
+            // Require systemSettingsConfirmed for ALL Android devices
+            // This ensures wizard completion before login
             const allMet =
                 bgStatus === 'granted' &&
                 notifStatus === 'granted' &&
-                (isIos || batteryOk);
+                (isIos || systemSettingsConfirmed);
 
             console.log('🔍 [PERMISSION CHECK]', {
                 bgStatus,
