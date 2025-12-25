@@ -164,8 +164,9 @@ export const startLocationTracking = async () => {
         distanceInterval: 10,
         showsBackgroundLocationIndicator: true,
         foregroundService: {
-            notificationTitle: "Helyzetkövetés Aktív",
-            notificationBody: "A Droszt app figyeli a pozíciódat.",
+            notificationTitle: " ",
+            notificationBody: " ",
+            notificationColor: "#00000000", // Transparent
         },
     });
     console.log('Background location tracking started');
