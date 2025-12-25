@@ -17,11 +17,14 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 
 import { Text, TextInput } from 'react-native';
 
-// Disable system font scaling
+// Disable system font scaling and set global bold style
 // @ts-ignore
 if (Text.defaultProps == null) Text.defaultProps = {};
 // @ts-ignore
 Text.defaultProps.allowFontScaling = false;
+// @ts-ignore
+Text.defaultProps.style = { fontWeight: 'bold' };
+
 // @ts-ignore
 if (TextInput.defaultProps == null) TextInput.defaultProps = {};
 // @ts-ignore
