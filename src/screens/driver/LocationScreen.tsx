@@ -527,7 +527,6 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
                   <>
                     {nameWithoutIcons}
                     {item.checkInTime ? ` - ${item.checkInTime}` : ''}
-                    {hasFoodPhone ? `  ${foodPhoneSuffix.trim()}` : ''}
                   </>
                 );
               })()}
@@ -590,7 +589,6 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
                 <>
                   {nameWithoutIcons}
                   {item.checkInTime ? ` - ${item.checkInTime}` : ''}
-                  {hasFoodPhone ? `  ${foodPhoneSuffix.trim()}` : ''}
                 </>
               );
             })()}
