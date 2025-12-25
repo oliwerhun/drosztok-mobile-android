@@ -169,42 +169,45 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                             const isInside = isPointInPolygon(point, polygon);
 
                             if (!isInside) {
-                                let violationCount = parseInt(await AsyncStorage.getItem(GEOFENCE_VIOLATION_KEY) || '0', 10);
-                                violationCount++;
-                                await AsyncStorage.setItem(GEOFENCE_VIOLATION_KEY, violationCount.toString());
-                                logger.log(`OUTSIDE Geofence! Count: ${violationCount}/10`, { geofence: geofenceName });
+                                // Timestamp-based strict kickout logic
+                                const firstOutsideTimestamp = await AsyncStorage.getItem('FIRST_OUTSIDE_TIMESTAMP');
+                                const now = Date.now();
 
-                                if (violationCount >= 10) {
-                                    logger.log('!!! VIOLATION LIMIT REACHED -> AUTO CHECKOUT DISABLED (V-NO-TRACKING) !!!');
+                                if (!firstOutsideTimestamp) {
+                                    // First time seen outside
+                                    await AsyncStorage.setItem('FIRST_OUTSIDE_TIMESTAMP', now.toString());
+                                    console.log('⚠️ [GEOFENCE] First time outside zone. Timer started.');
+                                } else {
+                                    const elapsed = now - parseInt(firstOutsideTimestamp, 10);
+                                    console.log(`⏱️ [GEOFENCE] Time outside: ${elapsed}ms`);
 
-                                    // ITT VOLT A KIDOBÁS, DE MOST KIKAPCSOLJUK - VISSZAKAPCSOLVA 2024-12-25
+                                    // 3 seconds threshold
+                                    if (elapsed > 3000) {
+                                        logger.log('!!! GEOFENCE TIMEOUT (3s) -> AUTO CHECKOUT !!!');
 
-                                    await AsyncStorage.removeItem(ACTIVE_CHECKIN_KEY);
-                                    await AsyncStorage.removeItem(GEOFENCE_VIOLATION_KEY);
-                                    undoService.clear();
+                                        await AsyncStorage.removeItem(ACTIVE_CHECKIN_KEY);
+                                        await AsyncStorage.removeItem('FIRST_OUTSIDE_TIMESTAMP');
+                                        undoService.clear();
 
-                                    await Notifications.scheduleNotificationAsync({
-                                        content: {
-                                            title: "Automatikus Kijelentkezés",
-                                            body: "Elhagytad a zónát, ezért a rendszer kijelentkeztetett.",
-                                        },
-                                        trigger: null,
-                                    });
+                                        await Notifications.scheduleNotificationAsync({
+                                            content: {
+                                                title: "Automatikus Kijelentkezés",
+                                                body: "Elhagytad a zónát, ezért a rendszer kijelentkeztetett.",
+                                            },
+                                            trigger: null,
+                                        });
 
-                                    // Perform actual checkout
-                                    await checkoutFromLocation(locationName, uid);
-
-                                    // Handle V-Osztály dual checkout if needed
-                                    // Note: checkoutFromAllLocations handles this usually, but here we specific target.
-                                    // If user was V-Osztály, we should also check if they need removal from V-Osztály queue
-                                    // Since we don't have full profile here easily, we rely on main location checkout.
-                                    // Ideally, checking out from main location is enough for now.
-
+                                        // Perform actual checkout
+                                        await checkoutFromLocation(locationName, uid);
+                                    }
                                 }
                             } else {
-                                // User is inside, reset counter
-                                logger.log('Inside Geofence OK. Resetting counter.');
-                                await AsyncStorage.removeItem(GEOFENCE_VIOLATION_KEY);
+                                // User is inside, clear timestamp
+                                const firstOutsideTimestamp = await AsyncStorage.getItem('FIRST_OUTSIDE_TIMESTAMP');
+                                if (firstOutsideTimestamp) {
+                                    console.log('✅ [GEOFENCE] Back inside zone. Timer reset.');
+                                    await AsyncStorage.removeItem('FIRST_OUTSIDE_TIMESTAMP');
+                                }
                             }
                         }
                     }
@@ -246,8 +249,8 @@ export const startLocationTracking = async () => {
 
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: Location.Accuracy.High,
-        timeInterval: 10000,
-        distanceInterval: 10,
+        timeInterval: 3000,
+        distanceInterval: 5,
         showsBackgroundLocationIndicator: true,
         foregroundService: {
             notificationTitle: "Elitdroszt",
