@@ -139,14 +139,12 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                     }, { merge: true });
                     console.log('✅ [BG TASK] Firebase updated successfully!');
 
-                    // 1.5 Check Driver Activity (TEMPORARILY DISABLED for stability testing)
-                    /*
+                    // 1.5 Check Driver Activity
                     try {
                         await checkDriverActivity();
                     } catch (error) {
                         console.log('⚠️ [BG TASK] checkDriverActivity error (non-fatal):', error);
                     }
-                    */
 
 
                     // 2. Check Geofence if user is checked in
