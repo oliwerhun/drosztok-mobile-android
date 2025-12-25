@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import { doc, setDoc, deleteDoc, updateDoc, arrayRemove, getDoc } from 'firebase/firestore';
 import { db, auth } from '../config/firebase';
 import { undoService } from './UndoService';
+import { checkoutFromLocation } from './LocationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { isPointInPolygon, GEOFENCED_LOCATIONS } from './GeofenceService';
@@ -176,11 +177,12 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                                 if (violationCount >= 10) {
                                     logger.log('!!! VIOLATION LIMIT REACHED -> AUTO CHECKOUT DISABLED (V-NO-TRACKING) !!!');
 
-                                    // ITT VOLT A KIDOBÁS, DE MOST KIKAPCSOLJUK
-                                    /*
+                                    // ITT VOLT A KIDOBÁS, DE MOST KIKAPCSOLJUK - VISSZAKAPCSOLVA 2024-12-25
+
                                     await AsyncStorage.removeItem(ACTIVE_CHECKIN_KEY);
                                     await AsyncStorage.removeItem(GEOFENCE_VIOLATION_KEY);
                                     undoService.clear();
+
                                     await Notifications.scheduleNotificationAsync({
                                         content: {
                                             title: "Automatikus Kijelentkezés",
@@ -188,8 +190,16 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                                         },
                                         trigger: null,
                                     });
-                                    // ... Firestore checkout logic ...
-                                    */
+
+                                    // Perform actual checkout
+                                    await checkoutFromLocation(locationName, uid);
+
+                                    // Handle V-Osztály dual checkout if needed
+                                    // Note: checkoutFromAllLocations handles this usually, but here we specific target.
+                                    // If user was V-Osztály, we should also check if they need removal from V-Osztály queue
+                                    // Since we don't have full profile here easily, we rely on main location checkout.
+                                    // Ideally, checking out from main location is enough for now.
+
                                 }
                             } else {
                                 // User is inside, reset counter
