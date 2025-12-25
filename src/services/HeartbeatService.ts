@@ -134,7 +134,7 @@ export const resetHeartbeat = async () => {
     console.log('🔄 [HEARTBEAT] Timer reset');
 };
 
-const handleHeartbeatTimeout = async () => {
+export const handleHeartbeatTimeout = async () => {
     console.log('🚨 [HEARTBEAT] Handling timeout - logging out');
 
     try {

@@ -12,9 +12,51 @@ const LOCATION_TASK_NAME = 'background-location-task';
 const ACTIVE_CHECKIN_KEY = 'active_checkin_data';
 const GEOFENCE_VIOLATION_KEY = 'GEOFENCE_VIOLATION_COUNT';
 
-// Helper for checkDriverActivity (placeholder if lost)
+// Helper for checkDriverActivity (heartbeat check)
 const checkDriverActivity = async () => {
-    // Implement heartbeat logic here if needed
+    const LAST_ACTIVITY_KEY = 'last_activity_timestamp';
+    const HEARTBEAT_RESPONSE_KEY = 'heartbeat_pending';
+    const HEARTBEAT_INTERVAL = 2 * 60 * 1000; // 2 minutes for testing (change to 55 * 60 * 1000 for production)
+    const HEARTBEAT_TIMEOUT = 4 * 60 * 1000; // 4 minutes
+
+    const lastActivity = await AsyncStorage.getItem(LAST_ACTIVITY_KEY);
+    const now = Date.now();
+    const elapsed = now - parseInt(lastActivity || '0');
+
+    // Check if 2 minutes (or 55 minutes in production) have passed
+    if (elapsed >= HEARTBEAT_INTERVAL) {
+        const pending = await AsyncStorage.getItem(HEARTBEAT_RESPONSE_KEY);
+
+        // Only trigger if not already pending
+        if (!pending) {
+            console.log('⏰ [HEARTBEAT] 2 minutes elapsed, triggering notification');
+            await AsyncStorage.setItem(HEARTBEAT_RESPONSE_KEY, now.toString());
+
+            // Send notification
+            await Notifications.scheduleNotificationAsync({
+                content: {
+                    title: '⚠️ Inaktivitás Figyelmeztetés',
+                    body: 'Dolgozol még? Válaszolj 4 percen belül!',
+                    data: { type: 'heartbeat' },
+                    sound: true,
+                    priority: Notifications.AndroidNotificationPriority.HIGH,
+                    vibrate: [0, 250, 250, 250],
+                },
+                trigger: null,
+            });
+
+            // Start 4-minute timeout check
+            setTimeout(async () => {
+                const stillPending = await AsyncStorage.getItem(HEARTBEAT_RESPONSE_KEY);
+                if (stillPending) {
+                    console.log('⏱️ [HEARTBEAT] Timeout - no response, logging out');
+                    // Import and call timeout handler
+                    const { handleHeartbeatTimeout } = await import('./HeartbeatService');
+                    await handleHeartbeatTimeout();
+                }
+            }, HEARTBEAT_TIMEOUT);
+        }
+    }
 };
 
 Notifications.setNotificationHandler({
@@ -164,8 +206,8 @@ export const startLocationTracking = async () => {
         distanceInterval: 10,
         showsBackgroundLocationIndicator: true,
         foregroundService: {
-            notificationTitle: " ",
-            notificationBody: " ",
+            notificationTitle: "Elitdroszt",
+            notificationBody: "Be vagy jelentkezve.",
             notificationColor: "#00000000", // Transparent
         },
     });
