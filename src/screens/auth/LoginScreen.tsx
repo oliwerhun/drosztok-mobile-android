@@ -48,14 +48,17 @@ export default function LoginScreen({ navigation }: any) {
       const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
       const user = userCredential.user;
 
-      // 1. Generate & Save Session ID
+      // 1. Store USER_ID for background location tracking
+      await AsyncStorage.setItem('USER_ID', user.uid);
+
+      // 2. Generate & Save Session ID
       const sessionId = Date.now().toString();
       await AsyncStorage.setItem('sessionId', sessionId);
 
       const profileRef = doc(db, 'profiles', user.uid);
       await updateDoc(profileRef, { sessionId: sessionId });
 
-      // 2. Global Checkout (Clean Start)
+      // 3. Global Checkout (Clean Start)
       await checkoutFromAllLocations(user.uid, null); // passing null for profile as we might not have it yet, but uid is enough for removal
     } catch (error: any) {
       console.error('Login error:', error);

@@ -5,7 +5,7 @@ import { db, auth } from '../config/firebase';
 import { undoService } from './UndoService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import { isPointInPolygon, geofencedLocations } from './GeofenceService';
+import { isPointInPolygon, GEOFENCED_LOCATIONS } from './GeofenceService';
 import { logger } from '../utils/Logger';
 
 const LOCATION_TASK_NAME = 'background-location-task';
@@ -66,15 +66,25 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                 }
             }
 
-            if (auth.currentUser) {
+            // Get user ID from AsyncStorage (more reliable than auth.currentUser in background)
+            const userId = await AsyncStorage.getItem('USER_ID');
+
+            console.log('🔐 [BG TASK] Auth check:', {
+                hasUserId: !!userId,
+                uid: userId || 'NO_USER'
+            });
+
+            if (userId) {
                 try {
+                    console.log('📤 [BG TASK] Updating Firebase...');
                     // 1. Update location in Firestore
-                    const userRef = doc(db, 'driver_locations', auth.currentUser.uid);
+                    const userRef = doc(db, 'driver_locations', userId);
                     await setDoc(userRef, {
                         lat: location.coords.latitude,
                         lng: location.coords.longitude,
                         timestamp: Date.now(),
                     }, { merge: true });
+                    console.log('✅ [BG TASK] Firebase updated successfully!');
 
                     // 1.5 Check Driver Activity
                     await checkDriverActivity();
@@ -84,10 +94,10 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                     if (checkInData) {
                         const { locationName, geofenceName, uid, enforceGeofence } = JSON.parse(checkInData);
 
-                        if (uid !== auth.currentUser.uid) return;
+                        if (uid !== userId) return;
                         if (enforceGeofence === false) return;
 
-                        const polygon = geofencedLocations[geofenceName]?.polygon;
+                        const polygon = GEOFENCED_LOCATIONS[geofenceName]?.polygon;
                         if (polygon) {
                             const point = { lat: location.coords.latitude, lng: location.coords.longitude };
                             const isInside = isPointInPolygon(point, polygon);
@@ -125,8 +135,10 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                     }
 
                 } catch (err) {
-                    console.error('Bg Task Error:', err);
+                    console.error('🔴 [BG TASK] Firebase Error:', err);
                 }
+            } else {
+                console.log('⚠️ [BG TASK] No USER_ID in AsyncStorage - skipping Firebase update');
             }
         }
     }

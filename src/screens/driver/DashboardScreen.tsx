@@ -179,6 +179,9 @@ export default function DashboardScreen({ navigation }: any) {
                 await checkoutFromAllLocations(userProfile.uid, userProfile);
               }
 
+              // Remove USER_ID to stop background location updates
+              await AsyncStorage.removeItem('USER_ID');
+
               await stopLocationTracking();
               await signOut(auth);
             } catch (error) {
