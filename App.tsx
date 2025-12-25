@@ -9,7 +9,7 @@ import PermissionGuard from './src/components/PermissionGuard';
 import { ThemeProvider } from './src/context/ThemeContext';
 import { FontSizeProvider } from './src/context/FontSizeContext';
 import GeofenceService from './src/services/GeofenceService';
-import { registerHeartbeatTask, respondToHeartbeat } from './src/services/HeartbeatService';
+import { respondToHeartbeat } from './src/services/HeartbeatService';
 import { HeartbeatDialog } from './src/components/HeartbeatDialog';
 import * as Notifications from 'expo-notifications';
 
@@ -23,8 +23,9 @@ export default function App() {
     console.log('App: Starting GeofenceService');
     GeofenceService.startTracking();
 
-    // Register heartbeat task
-    registerHeartbeatTask();
+    // Unregister legacy heartbeat task (integrated into location service now)
+    const { unregisterHeartbeatTask } = require('./src/services/HeartbeatService');
+    unregisterHeartbeatTask();
 
     // Listen for heartbeat notifications
     const subscription = Notifications.addNotificationResponseReceivedListener(response => {
