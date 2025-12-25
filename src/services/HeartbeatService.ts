@@ -140,6 +140,20 @@ export const handleHeartbeatTimeout = async () => {
     try {
         const userId = await AsyncStorage.getItem('USER_ID');
 
+        // Send notification about timeout
+        await Notifications.scheduleNotificationAsync({
+            content: {
+                title: '⚠️ Automatikus Kijelentkezés',
+                body: 'Nem válaszoltál, ezért a rendszer kiléptetett!',
+                sound: true,
+                priority: Notifications.AndroidNotificationPriority.HIGH,
+            },
+            trigger: null,
+        });
+
+        // Wait a bit for notification to be seen
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
         // 1. Clear undo stack (disable Flame)
         await AsyncStorage.removeItem('undo_stack');
         console.log('🔥 [HEARTBEAT] Undo stack cleared (Flame disabled)');
