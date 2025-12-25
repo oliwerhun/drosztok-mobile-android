@@ -227,8 +227,7 @@ export const startLocationTracking = async () => {
 
     const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
     if (isRegistered) {
-        console.log('Location tracking task already registered');
-        return true;
+        console.log('Location tracking task already registered - Updating options...');
     }
 
     // Initialize heartbeat timestamp only when starting NEW tracking
