@@ -1,4 +1,4 @@
-import { LocationMember } from './LocationScreen';
+import { LocationMember } from '../screens/driver/LocationScreen';
 
 export interface CheckoutState {
     locationName: string;
