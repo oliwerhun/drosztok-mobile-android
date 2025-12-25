@@ -28,14 +28,14 @@ const checkDriverActivity = async () => {
     if (elapsed >= HEARTBEAT_INTERVAL) {
         const appState = AppState.currentState;
         console.log('⏰ [HEARTBEAT] 2 minutes elapsed, app state:', appState);
-        
+
         // If app is in foreground, just reset timestamp and continue
         if (appState === 'active') {
             console.log('✅ [HEARTBEAT] App active, resetting timer without notification');
             await AsyncStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
             return;
         }
-        
+
         const pending = await AsyncStorage.getItem(HEARTBEAT_RESPONSE_KEY);
 
         // Only trigger if not already pending
@@ -139,12 +139,14 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
                     }, { merge: true });
                     console.log('✅ [BG TASK] Firebase updated successfully!');
 
-                    // 1.5 Check Driver Activity (wrapped in try-catch to prevent task crash)
+                    // 1.5 Check Driver Activity (TEMPORARILY DISABLED for stability testing)
+                    /*
                     try {
                         await checkDriverActivity();
                     } catch (error) {
                         console.log('⚠️ [BG TASK] checkDriverActivity error (non-fatal):', error);
                     }
+                    */
 
 
                     // 2. Check Geofence if user is checked in

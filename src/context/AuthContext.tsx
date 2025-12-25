@@ -42,7 +42,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const profileSnap = await getDoc(profileRef);
 
           if (profileSnap.exists()) {
-            setUserProfile({ uid: firebaseUser.uid, ...profileSnap.data() } as UserProfile);
+            const profileData = profileSnap.data();
+            setUserProfile({ uid: firebaseUser.uid, ...profileData } as UserProfile);
+
+            // ✅ Save USER_ID and IS_ADMIN to AsyncStorage for background location tracking
+            await AsyncStorage.setItem('USER_ID', firebaseUser.uid);
+            await AsyncStorage.setItem('IS_ADMIN', profileData.role === 'admin' ? 'true' : 'false');
+
+            console.log('✅ [AuthContext] USER_ID saved to AsyncStorage for background tracking');
           } else {
             setUserProfile(null);
           }
@@ -52,6 +59,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         setUserProfile(null);
+        // Clear AsyncStorage on logout (redundant safety, DashboardScreen already does this)
+        await AsyncStorage.removeItem('USER_ID');
+        await AsyncStorage.removeItem('IS_ADMIN');
+        console.log('[AuthContext] USER_ID removed from AsyncStorage (logged out)');
       }
 
       setLoading(false);
