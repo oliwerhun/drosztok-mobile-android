@@ -26,6 +26,10 @@ class UndoService {
     clear() {
         this.lastCheckedOut = null;
     }
+
+    isUndoAvailable(): boolean {
+        return this.lastCheckedOut !== null;
+    }
 }
 
 export const undoService = new UndoService();
