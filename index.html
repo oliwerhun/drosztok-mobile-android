@@ -1717,11 +1717,13 @@
                     <div id="member-list" class="space-y-2">
                        ${members.length > 0 ? members.map(m => {
                 let displayName = m.displayName;
-                const isFlame = displayName.includes('__FLAME__');
+                const isFoodPhone = displayName.includes('🍔 ☎️');
                 displayName = displayName.replace('__FLAME__', '').trim();
                 const itemClasses = isFlame
                     ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
-                    : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center";
+                    : (isFoodPhone
+                        ? "member-item bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 p-2 rounded-md text-sm flex justify-between items-center"
+                        : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center");
 
                 return `
                             <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}" data-member-json='${JSON.stringify(m)}'>
@@ -1991,10 +1993,13 @@
                                    ${airportMembers.length > 0 ? airportMembers.map(m => {
                         let displayName = m.displayName;
                         const isFlame = displayName.includes('__FLAME__');
+                        const isFoodPhone = displayName.includes('🍔 ☎️');
                         displayName = displayName.replace('__FLAME__', '').trim();
                         const itemClasses = isFlame
                             ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
-                            : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center";
+                            : (isFoodPhone
+                                ? "member-item bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 p-2 rounded-md text-sm flex justify-between items-center"
+                                : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center");
 
                         return `
                                         <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}">
@@ -2070,10 +2075,13 @@
                                    ${emiratesMembers.length > 0 ? emiratesMembers.map(m => {
                         let displayName = m.displayName;
                         const isFlame = displayName.includes('__FLAME__');
+                        const isFoodPhone = displayName.includes('🍔 ☎️');
                         displayName = displayName.replace('__FLAME__', '').trim();
                         const itemClasses = isFlame
                             ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
-                            : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center";
+                            : (isFoodPhone
+                                ? "member-item bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 p-2 rounded-md text-sm flex justify-between items-center"
+                                : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center");
 
                         return `
                                         <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}">
@@ -2237,11 +2245,13 @@
                 <div id="member-list" class="space-y-2 overflow-y-auto flex-grow">
                    ${vClassMembers.length > 0 ? vClassMembers.map(m => {
                 let displayName = m.displayName;
-                const isFlame = displayName.includes('__FLAME__');
+                const isFoodPhone = displayName.includes('🍔 ☎️');
                 displayName = displayName.replace('__FLAME__', '').trim();
                 const itemClasses = isFlame
                     ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
-                    : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center";
+                    : (isFoodPhone
+                        ? "member-item bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 p-2 rounded-md text-sm flex justify-between items-center"
+                        : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center");
 
                 return `
                         <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}">

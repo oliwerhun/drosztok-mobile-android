@@ -15,6 +15,18 @@ import * as Notifications from 'expo-notifications';
 
 import ErrorBoundary from './src/components/ErrorBoundary';
 
+import { Text, TextInput } from 'react-native';
+
+// Disable system font scaling
+// @ts-ignore
+if (Text.defaultProps == null) Text.defaultProps = {};
+// @ts-ignore
+Text.defaultProps.allowFontScaling = false;
+// @ts-ignore
+if (TextInput.defaultProps == null) TextInput.defaultProps = {};
+// @ts-ignore
+TextInput.defaultProps.allowFontScaling = false;
+
 export default function App() {
   const [showHeartbeatDialog, setShowHeartbeatDialog] = useState(false);
 

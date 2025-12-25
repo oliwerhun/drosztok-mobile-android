@@ -477,11 +477,15 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
               backgroundColor: isActive ? colors.primary :
                 (item.displayName?.includes('__FLAME__')
                   ? (theme === 'dark' ? '#fecaca' : '#ffe4e6')
-                  : (theme === 'dark' ? '#4b5563' : '#ffffff')),
-              borderWidth: item.displayName?.includes('__FLAME__') ? 2 : 1,
+                  : (item.displayName?.includes('🍔 ☎️')
+                    ? (theme === 'dark' ? '#bfdbfe' : '#dbeafe')
+                    : (theme === 'dark' ? '#4b5563' : '#ffffff'))),
+              borderWidth: (item.displayName?.includes('__FLAME__') || item.displayName?.includes('🍔 ☎️')) ? 2 : 1,
               borderColor: item.displayName?.includes('__FLAME__')
                 ? (theme === 'dark' ? '#dc2626' : '#f43f5e')
-                : (theme === 'dark' ? '#4b5563' : '#e5e7eb')
+                : (item.displayName?.includes('🍔 ☎️')
+                  ? (theme === 'dark' ? '#3b82f6' : '#3b82f6')
+                  : (theme === 'dark' ? '#4b5563' : '#e5e7eb'))
             },
           ]}
         >
@@ -495,14 +499,18 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
           </TouchableOpacity>
 
           <View style={styles.memberInfo}>
-            <Text style={[
-              styles.memberName,
-              {
-                color: isActive ? '#ffffff' :
-                  (item.displayName?.includes('__FLAME__') && theme === 'dark' ? '#000000' : colors.text),
-                fontSize: fontSize
-              }
-            ]}>
+            <Text
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={[
+                styles.memberName,
+                {
+                  color: isActive ? '#ffffff' :
+                    (item.displayName?.includes('__FLAME__') && theme === 'dark' ? '#000000' :
+                      (item.displayName?.includes('🍔 ☎️') && theme === 'dark' ? '#000000' : colors.text)),
+                  fontSize: fontSize
+                }
+              ]}>
               {(() => {
                 const displayName = item.displayName || item.username;
                 const foodPhoneSuffix = ' 🍔 ☎️';
@@ -543,22 +551,29 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
           {
             backgroundColor: item.displayName?.includes('__FLAME__')
               ? (theme === 'dark' ? '#fecaca' : '#ffe4e6')
-              : (theme === 'dark' ? '#4b5563' : '#ffffff'),
-            borderWidth: item.displayName?.includes('__FLAME__') ? 2 : 1,
+              : (item.displayName?.includes('🍔 ☎️')
+                ? (theme === 'dark' ? '#bfdbfe' : '#dbeafe')
+                : (theme === 'dark' ? '#4b5563' : '#ffffff')),
+            borderWidth: (item.displayName?.includes('__FLAME__') || item.displayName?.includes('🍔 ☎️')) ? 2 : 1,
             borderColor: item.displayName?.includes('__FLAME__')
               ? (theme === 'dark' ? '#dc2626' : '#f43f5e')
-              : (theme === 'dark' ? '#4b5563' : '#e5e7eb')
+              : (item.displayName?.includes('🍔 ☎️')
+                ? (theme === 'dark' ? '#3b82f6' : '#3b82f6')
+                : (theme === 'dark' ? '#4b5563' : '#e5e7eb'))
           },
         ]}
       >
         <View style={styles.memberInfo}>
-          <Text style={[
-            styles.memberName,
-            {
-              color: item.displayName?.includes('__FLAME__') && theme === 'dark' ? '#000000' : colors.text,
-              fontSize: fontSize
-            }
-          ]}>
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[
+              styles.memberName,
+              {
+                color: (item.displayName?.includes('__FLAME__') || item.displayName?.includes('🍔 ☎️')) && theme === 'dark' ? '#000000' : colors.text,
+                fontSize: fontSize
+              }
+            ]}>
             {(() => {
               const displayName = item.displayName || item.username;
               const foodPhoneSuffix = ' 🍔 ☎️';
