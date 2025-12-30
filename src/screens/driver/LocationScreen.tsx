@@ -4,6 +4,7 @@ import DraggableFlatList, { ScaleDecorator, RenderItemParams } from 'react-nativ
 import { useAuth } from '../../context/AuthContext';
 import { db } from '../../config/firebase';
 import { doc, updateDoc, arrayUnion, arrayRemove, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../../context/ThemeContext';
 import { useFontSize } from '../../context/FontSizeContext';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -18,7 +19,7 @@ import GeofenceService, { GEOFENCED_LOCATIONS } from '../../services/GeofenceSer
 // Global variable to store last checkout for Undo (Flame) functionality
 let lastCheckedOut: any = null;
 
-interface Member {
+export interface LocationMember {
   uid: string;
   username: string;
   displayName?: string;
@@ -49,7 +50,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
   const { user, userProfile } = useAuth();
   const { theme, colors } = useTheme();
   const { fontSize } = useFontSize();
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<LocationMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [checkingIn, setCheckingIn] = useState(false);
   const [isInsideZone, setIsInsideZone] = useState<boolean | null>(null);
@@ -211,6 +212,17 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         await setDoc(vClassRef, { members: arrayUnion(newMember) }, { merge: true });
       }
 
+      // CRITICAL FIX v1.6.15: Save active checkin data for Background Task context
+      await AsyncStorage.setItem('active_checkin_data', JSON.stringify({
+        locationName,
+        geofenceName: resolvedGeofenceName,
+        uid: user.uid,
+        enforceGeofence: true
+      }));
+      // Reset timestamp for strict kickout logic
+      await AsyncStorage.removeItem('FIRST_OUTSIDE_TIMESTAMP');
+      console.log('✅ [CHECKIN] Saved active_checkin_data for BG Task:', locationName);
+
       lastCheckedOut = null;
 
     } catch (error: any) {
@@ -263,6 +275,11 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
           await updateDoc(locationRef, {
             [resolvedMembersField]: arrayRemove(memberToRemove)
           });
+
+          // CRITICAL FIX v1.6.15: Clear active checkin data
+          await AsyncStorage.removeItem('active_checkin_data');
+          await AsyncStorage.removeItem('FIRST_OUTSIDE_TIMESTAMP');
+          console.log('✅ [CHECKOUT] Cleared active_checkin_data');
         }
       }
     } catch (error) {
@@ -282,33 +299,33 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
     if (!GEOFENCED_LOCATIONS[resolvedGeofenceName]) {
       return;
     }
-
+ 
     const wasInside = prevIsInsideZone.current;
     const isNowOutside = isInsideZone === false;
     const isNowInside = isInsideZone === true;
-
+ 
     // Reset debounce timer if user is back inside
     if (isNowInside) {
       outsideZoneSince.current = null;
     }
-
+ 
     // CRITICAL FIX: Only proceed if user is actually checked into THIS zone
     const isUserInThisZone = user && members.some(m => m.uid === user.uid);
     if (!isUserInThisZone) {
       // User is not in this zone's queue, so don't auto-checkout
       return;
     }
-
+ 
     // Start debounce timer on first detection of being outside
     if (wasInside === true && isNowOutside && outsideZoneSince.current === null) {
       outsideZoneSince.current = Date.now();
       console.log(`User left zone ${resolvedGeofenceName}, starting ${AUTO_CHECKOUT_DELAY_MS / 1000}s debounce timer`);
     }
-
+ 
     // Check if user has been outside long enough
     if (wasInside === true && isNowOutside && outsideZoneSince.current !== null) {
       const timeOutside = Date.now() - outsideZoneSince.current;
-
+ 
       if (timeOutside >= AUTO_CHECKOUT_DELAY_MS && !loading && !checkingIn) {
         console.log(`Auto-checkout: User outside ${resolvedGeofenceName} for ${timeOutside / 1000}s, triggering checkout`);
         handleCheckOut();
@@ -316,7 +333,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
         outsideZoneSince.current = null; // Reset timer
       }
     }
-
+ 
     // Update previous state for next comparison
     prevIsInsideZone.current = isInsideZone;
   }, [isInsideZone, members, user, gpsEnabled, loading, checkingIn, resolvedGeofenceName]);
@@ -454,7 +471,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
     }
   };
 
-  const handleDragEnd = async (data: Member[]) => {
+  const handleDragEnd = async (data: LocationMember[]) => {
     setMembers(data);
     if (userProfile?.role !== 'admin') return;
     try {
@@ -467,7 +484,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
   };
 
   // Render function for admin users (DraggableFlatList with ScaleDecorator)
-  const renderItemAdmin = ({ item, drag, isActive }: RenderItemParams<Member>) => {
+  const renderItemAdmin = ({ item, drag, isActive }: RenderItemParams<LocationMember>) => {
     return (
       <ScaleDecorator>
         <View
@@ -542,7 +559,7 @@ const LocationScreen: React.FC<LocationScreenProps> = ({
   };
 
   // Render function for non-admin users (FlatList without ScaleDecorator)
-  const renderItemNonAdmin = ({ item }: { item: Member }) => {
+  const renderItemNonAdmin = ({ item }: { item: LocationMember }) => {
     return (
       <View
         style={[

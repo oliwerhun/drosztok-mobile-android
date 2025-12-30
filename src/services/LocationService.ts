@@ -5,8 +5,25 @@ import { undoService } from './UndoService';
 
 export const LOCATIONS = ['Akadémia', 'Belváros', 'Budai', 'Conti', 'Crowne', 'Kozmo', 'Reptér', 'Emirates', 'V-Osztály', '213'];
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 export const checkoutFromAllLocations = async (uid: string, currentProfile?: any, excludeLocation?: string, excludeLocations?: string[]) => {
     if (!uid) return;
+
+    // CRITICAL FIX v1.6.15: Clear active checkin data on global checkout (unless we are just switching tabs locally)
+    // But wait, if we are switching tabs (e.g. checkinToNewLocation calls this), we might want to keep it?
+    // Actually, checkinToNewLocation calls this THEN sets the new one. So clearing here is safe,
+    // because the new one will be set immediately after by handleCheckIn.
+    // However, to be absolutely safe and avoid race conditions where BG task runs in between:
+    // We only clear if this is a "full" checkout (e.g. Logout) or if we are sure.
+    // Given the logic in LocationScreen.tsx, handleCheckIn sets the key at the END of the process.
+    // So clearing it here is correct to ensure no stale state remains.
+    try {
+        await AsyncStorage.removeItem('active_checkin_data');
+        await AsyncStorage.removeItem('FIRST_OUTSIDE_TIMESTAMP');
+    } catch (e) {
+        console.log('Error clearing checkin data', e);
+    }
 
     // Merge single exclude and array excludes
     const locationsToExclude = [

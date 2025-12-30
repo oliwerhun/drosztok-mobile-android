@@ -12,8 +12,8 @@ import { logger } from '../utils/Logger';
 
 const { BatteryOptimization, UnusedAppsModule } = NativeModules;
 
-const SETTINGS_CONFIRMED_KEY = 'system_settings_confirmed_v5'; // Incremented version
-const PERMISSIONS_COMPLETED_KEY = 'permissions_completed_v1';
+const SETTINGS_CONFIRMED_KEY = 'system_settings_confirmed_v6'; // Incremented key to force wizard
+const PERMISSIONS_COMPLETED_KEY = 'permissions_completed_v2';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 type WizardStep = 'location' | 'notification' | 'unused_apps' | 'battery' | 'completed';

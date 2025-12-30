@@ -51,10 +51,16 @@ export const registerHeartbeatTask = async () => {
 
 export const unregisterHeartbeatTask = async () => {
     try {
-        await BackgroundFetch.unregisterTaskAsync(HEARTBEAT_TASK);
-        console.log('✅ [HEARTBEAT] Task unregistered');
+        const isRegistered = await TaskManager.isTaskRegisteredAsync(HEARTBEAT_TASK);
+        if (isRegistered) {
+            await BackgroundFetch.unregisterTaskAsync(HEARTBEAT_TASK);
+            console.log('✅ [HEARTBEAT] Task unregistered');
+        } else {
+            console.log('ℹ️ [HEARTBEAT] Task was not registered, skipping unregister');
+        }
     } catch (error) {
-        console.error('❌ [HEARTBEAT] Failed to unregister task:', error);
+        // Suppress "Task not found" errors as they are expected if task wasn't running
+        console.log('⚠️ [HEARTBEAT] Warning during unregister (non-fatal):', error);
     }
 };
 

@@ -9,6 +9,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { isPointInPolygon, GEOFENCED_LOCATIONS } from './GeofenceService';
 import { logger } from '../utils/Logger';
+import * as IntentLauncher from 'expo-intent-launcher';
+import { Alert, Linking, Platform } from 'react-native';
+import { GeofenceService } from './GeofenceService';
+
 
 const LOCATION_TASK_NAME = 'background-location-task';
 const ACTIVE_CHECKIN_KEY = 'active_checkin_data';
@@ -222,41 +226,124 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
     }
 });
 
+const GEOFENCE_TASK_NAME = 'native-geofence-task';
+
+TaskManager.defineTask(GEOFENCE_TASK_NAME, async ({ data, error }) => {
+    const { eventType, region } = (data as any) || {};
+    if (error) {
+        console.error('🔴 [Native Geofence] Task Error:', error);
+        return;
+    }
+
+    // We only care about EXIT events
+    if (eventType === Location.GeofencingEventType.Exit) {
+        console.log('☢️ [Native Geofence] EXIT EVENT TRIGGERED! (Nuclear Code)');
+
+        try {
+            const uid = await AsyncStorage.getItem('user_uid');
+            const activeCheckinStr = await AsyncStorage.getItem(ACTIVE_CHECKIN_KEY);
+
+            if (uid && activeCheckinStr) {
+                const { locationName } = JSON.parse(activeCheckinStr);
+
+                // Double check if region matches current location (optional safety)
+                if (region.identifier === locationName) {
+                    console.log(`☢️ [Native Geofence] Kicking out from ${locationName}`);
+
+                    // Perform Kickout Sequence
+                    await AsyncStorage.removeItem(ACTIVE_CHECKIN_KEY);
+                    await AsyncStorage.removeItem('FIRST_OUTSIDE_TIMESTAMP');
+                    await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME).catch(() => { });
+
+                    undoService.clear();
+
+                    await Notifications.scheduleNotificationAsync({
+                        content: {
+                            title: "Zóna Elhagyás (Háttér)",
+                            body: "A rendszer érzékelte a távozást. Kijelentkezve.",
+                        },
+                        trigger: null,
+                    });
+
+                    await checkoutFromLocation(locationName, uid);
+                }
+            } else {
+                console.log('☢️ [Native Geofence] Exit triggered but no user/checkin found.');
+            }
+        } catch (e) {
+            console.error('☢️ [Native Geofence] Error executing checkout:', e);
+        }
+    }
+});
+
+// checkForBatteryOptimization removed as it is handled by PermissionGuard
+
 export const startLocationTracking = async () => {
     logger.log('Starting Tracking Service...');
 
+    // 0. Battery Check - REMOVED (Handled by PermissionGuard)
+    // await checkForBatteryOptimization();
+
     const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
     if (isRegistered) {
-        console.log('Location tracking task already registered - Updating options...');
+        console.log('Location tracking task already registered - STOPPING to force update options...');
+        await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
     }
 
     // Initialize heartbeat timestamp only when starting NEW tracking
+    // For restart logic, we keep or update it.
     await AsyncStorage.setItem('last_activity_timestamp', Date.now().toString());
-    console.log('🔄 [HEARTBEAT] Initialized activity timestamp (New Session)');
 
+    // Request permissions again just to be safe
     const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
     if (foregroundStatus !== 'granted') {
-        console.log('Foreground location permission denied');
+        console.log('Foreground permission denied');
         return false;
     }
 
     const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
     if (backgroundStatus !== 'granted') {
-        console.log('Background location permission denied');
+        console.log('Background permission denied');
         return false;
     }
 
+    console.log('Starting location updates with AGGRESSIVE options (v1.6.12)...');
     await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
         accuracy: Location.Accuracy.High,
         timeInterval: 3000,
-        distanceInterval: 5,
+        distanceInterval: 0, // Update on ANY movement
+        deferredUpdatesInterval: 0, // Immediate delivery
+        pausesUpdatesAutomatically: false, // Prevent OS pause
         showsBackgroundLocationIndicator: true,
         foregroundService: {
             notificationTitle: "Elitdroszt",
-            notificationBody: "Be vagy jelentkezve.",
+            notificationBody: "Be vagy jelentkezve (Aktív Követés).",
         },
     });
-    console.log('Background location tracking started');
+
+    // 2. Start Geofencing Fallback (if checked in)
+    try {
+        const activeCheckinStr = await AsyncStorage.getItem(ACTIVE_CHECKIN_KEY);
+        if (activeCheckinStr) {
+            const { locationName } = JSON.parse(activeCheckinStr);
+            // Use the static method from the imported class
+            const region = GeofenceService.getCircularRegion(locationName);
+
+            if (region) {
+                console.log(`Starting Fallback Geofence for: ${locationName}`, region);
+                await Location.startGeofencingAsync(GEOFENCE_TASK_NAME, [{
+                    ...region,
+                    identifier: locationName,
+                    notifyOnEnter: false,
+                    notifyOnExit: true,
+                }]);
+            }
+        }
+    } catch (e) {
+        console.log('Error starting geofence fallback:', e);
+    }
+
+    console.log('Location tracking started successfully');
     return true;
 };
 
@@ -267,6 +354,13 @@ export const stopLocationTracking = async () => {
         if (isRegistered) {
             await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
             console.log('Background location tracking stopped');
+        }
+
+        // Stop Geofencing too
+        const isGeofenceRegistered = await TaskManager.isTaskRegisteredAsync(GEOFENCE_TASK_NAME);
+        if (isGeofenceRegistered) {
+            await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME);
+            console.log('Geofencing fallback stopped');
         }
     } catch (error) {
         console.error('Error stopping location tracking:', error);

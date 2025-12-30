@@ -160,7 +160,7 @@ type GeofenceCallback = (locationName: string, isInside: boolean) => void;
  * Singleton GPS Tracking Service
  * Maintains global geofence status for all zones and notifies subscribers of changes
  */
-class GeofenceService {
+export class GeofenceService {
   private static instance: GeofenceService;
   private locationSubscription: Location.LocationSubscription | null = null;
   private zoneStatus: Record<string, boolean> = {};
@@ -433,6 +433,48 @@ class GeofenceService {
    */
   public isCurrentlyTracking(): boolean {
     return this.isTracking;
+  }
+
+  public static getCircularRegion(locationName: string): { latitude: number; longitude: number; radius: number } | null {
+    const zone = GEOFENCED_LOCATIONS[locationName];
+    if (!zone) return null;
+
+    // Calculate center
+    const points = zone.polygon;
+    let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+
+    points.forEach(p => {
+      if (p.lat < minLat) minLat = p.lat;
+      if (p.lat > maxLat) maxLat = p.lat;
+      if (p.lng < minLng) minLng = p.lng;
+      if (p.lng > maxLng) maxLng = p.lng;
+    });
+
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+
+    // Calculate max distance from center to any point (simple approx for radius)
+    // 1 degree lat ~= 111km. 
+    let maxDistSq = 0;
+
+    points.forEach(p => {
+      const dLat = p.lat - centerLat;
+      const dLng = p.lng - centerLng;
+      const dSq = dLat * dLat + dLng * dLng; // this is in degrees squared
+      if (dSq > maxDistSq) maxDistSq = dSq;
+    });
+
+    const maxDistDeg = Math.sqrt(maxDistSq);
+    const radiusMeters = maxDistDeg * 111000; // rough conversion
+
+    // Add buffer (e.g. 500m to be safe for "Exit" event)
+    // Reptér is large, so we want a geofence that covers it entirely.
+
+    return {
+      latitude: centerLat,
+      longitude: centerLng,
+      radius: radiusMeters + 500
+    };
   }
 }
 

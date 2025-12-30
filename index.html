@@ -14,34 +14,6 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
-    <!-- Mobile Blocking Script -->
-    <script>
-        (function () {
-            function isMobile() {
-                var check = false;
-                (function (a) { if (/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino|android|ipad|playbook|silk/i.test(a) || /1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i.test(a.substr(0, 4))) check = true; })(navigator.userAgent || navigator.vendor || window.opera);
-
-                // iPad Pro / Desktop Mode Tablet Check
-                if (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform)) {
-                    check = true;
-                }
-
-                return check;
-            }
-
-            if (isMobile()) {
-                document.documentElement.innerHTML = '';
-                document.documentElement.style.backgroundColor = 'white';
-                // Create a generic error or just blank
-                var msg = document.createElement('div');
-                msg.innerHTML = '<p style="color: #ccc; font-family: sans-serif; text-align: center; margin-top: 50px;">Mobile access restricted.</p>';
-                // Uncomment to show message: document.documentElement.appendChild(msg);
-                window.stop();
-                throw new Error("Access denied for mobile devices.");
-            }
-        })();
-    </script>
-
     <!-- Landscape warning overlay -->
     <style>
         @media (orientation: landscape) and (max-width: 1024px) {
@@ -1488,18 +1460,29 @@
 
         function listenToAirportLocation() {
             if (unsubscribeLocationListener) unsubscribeLocationListener();
-            const locationRef = doc(db, "locations", "Reptér");
-            unsubscribeLocationListener = onSnapshot(locationRef, (docSnap) => {
+
+            // Listen to Reptér
+            const airportRef = doc(db, "locations", "Reptér");
+            unsubscribeLocationListener = onSnapshot(airportRef, (docSnap) => {
                 if (docSnap.exists()) {
                     airportMembers = docSnap.data().members || [];
-                    emiratesMembers = docSnap.data().emiratesMembers || [];
                     airportNotes = docSnap.data().notes || [''];
                 } else {
                     airportMembers = [];
-                    emiratesMembers = [];
                     airportNotes = [''];
                 }
                 renderAirportContent();
+            });
+
+            // Listen to Emirates independently
+            const emiratesRef = doc(db, "locations", "Emirates");
+            onSnapshot(emiratesRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    emiratesMembers = docSnap.data().members || [];
+                } else {
+                    emiratesMembers = [];
+                }
+                renderAirportContent(); // Refresh UI when Emirates changes
             });
         }
 
@@ -1717,26 +1700,25 @@
                     <div id="member-list" class="space-y-2">
                        ${members.length > 0 ? members.map(m => {
                 let displayName = m.displayName;
-                const isFoodPhone = displayName.includes('🍔 ☎️');
+                const isFlame = displayName.includes('__FLAME__');
                 displayName = displayName.replace('__FLAME__', '').trim();
                 const itemClasses = isFlame
                     ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
-                    : (isFoodPhone
-                        ? "member-item bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 p-2 rounded-md text-sm flex justify-between items-center"
-                        : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center");
+                    : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center";
 
                 return `
-                            <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}" data-member-json='${JSON.stringify(m)}'>
-                                <span class="text-base font-bold">${displayName}${m.checkInTime ? ' - ' + m.checkInTime : ''}</span>
-                                ${currentUserProfile.role === 'admin' ? `
-                                    <button class="kick-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900" data-uid="${m.uid}" data-user-type="${m.userType}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                ` : ''}
-                            </div>
-                       }).join('') : '<p class="text-sm text-gray-500">Nincs itt senki.</p>'}
+                                <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}" data-member-json='${JSON.stringify(m)}'>
+                                    <span class="text-base font-bold">${displayName}${m.checkInTime ? ' - ' + m.checkInTime : ''}</span>
+                                    ${currentUserProfile.role === 'admin' ? `
+                                        <button class="kick-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900" data-uid="${m.uid}" data-user-type="${m.userType}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            `;
+            }).join('') : '<p class="text-sm text-gray-500">Nincs itt senki.</p>'}
                     </div>
                 </div>
                 <div class="action-buttons-container">
@@ -1748,19 +1730,19 @@
             </div>
          `;
 
-                tabContent.removeEventListener('click', handleActionButtons);
-                tabContent.addEventListener('click', handleActionButtons);
+            tabContent.removeEventListener('click', handleActionButtons);
+            tabContent.addEventListener('click', handleActionButtons);
 
-                if (currentUserProfile.role === 'admin') {
-                    initSortableList(locationName);
-                }
+            if (currentUserProfile.role === 'admin') {
+                initSortableList(locationName);
             }
+        }
 
         function render213Content() {
-                    const isAdmin = currentUserProfile.role === 'admin';
-                    const listTitle = '213';
+            const isAdmin = currentUserProfile.role === 'admin';
+            const listTitle = '213';
 
-                    tabContent.innerHTML = `
+            tabContent.innerHTML = `
             <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex flex-col h-full">
                 <div class="flex justify-between items-center mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">
                     <h4 class="font-bold text-lg">${listTitle}</h4>
@@ -1804,173 +1786,189 @@
             </div>
         `;
 
-                    setup213Handlers();
+            setup213Handlers();
 
-                    if (isAdmin) {
-                        initSortableNotes('213');
-                    }
-                }
+            if (isAdmin) {
+                initSortableNotes('213');
+            }
+        }
 
         function setup213Handlers() {
-                    const container = document.getElementById('tab-content');
-                    if (!container) return;
+            const container = document.getElementById('tab-content');
+            if (!container) return;
 
-                    // Távolítsuk el az ÖSSZES régi listenert
-                    const old213ClickHandler = container._p213ClickHandler;
-                    const old213KeydownHandler = container._p213KeydownHandler;
-                    const old213BlurHandler = container._p213BlurHandler;
+            // Távolítsuk el az ÖSSZES régi listenert
+            const old213ClickHandler = container._p213ClickHandler;
+            const old213KeydownHandler = container._p213KeydownHandler;
+            const old213BlurHandler = container._p213BlurHandler;
 
-                    if (old213ClickHandler) {
-                        container.removeEventListener('click', old213ClickHandler);
-                    }
-                    if (old213KeydownHandler) {
-                        container.removeEventListener('keydown', old213KeydownHandler);
-                    }
-                    if (old213BlurHandler) {
-                        container.removeEventListener('blur', old213BlurHandler, true);
-                    }
+            if (old213ClickHandler) {
+                container.removeEventListener('click', old213ClickHandler);
+            }
+            if (old213KeydownHandler) {
+                container.removeEventListener('keydown', old213KeydownHandler);
+            }
+            if (old213BlurHandler) {
+                container.removeEventListener('blur', old213BlurHandler, true);
+            }
 
-                    // Új handlerek - EGYSZER
-                    const clickHandler = (e) => {
-                        if (activeTab !== '213') return;
+            // Új handlerek - EGYSZER
+            const clickHandler = (e) => {
+                if (activeTab !== '213') return;
 
-                        if (e.target.closest('#add-note-btn')) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            update213NotesInFirestore(null, null, false, true);
-                            return;
-                        }
-
-                        const deleteBtn = e.target.closest('.delete-note-btn');
-                        if (deleteBtn && !deleteBtn.disabled) {
-                            e.preventDefault();
-                            e.stopPropagation();
-
-                            const index = parseInt(deleteBtn.dataset.index);
-
-                            if (confirm('Biztosan törli a rendelést?')) {
-                                update213NotesInFirestore(index, null, true).catch(error => {
-                                    alert('Hiba történt a törlés során: ' + error.message);
-                                });
-                            }
-                        }
-                    };
-
-                    const keydownHandler = (e) => {
-                        if (activeTab !== '213') return;
-                        if (e.target.classList.contains('note-input') && e.key === 'Enter') {
-                            e.preventDefault();
-                            e.target.blur();
-                        }
-                    };
-
-                    const blurHandler = (e) => {
-                        if (activeTab !== '213') return;
-                        if (e.target.classList.contains('note-input')) {
-                            const input = e.target;
-                            const index = parseInt(input.closest('.note-item').dataset.index);
-                            const newValue = input.value.trim();
-                            update213NotesInFirestore(index, newValue, false);
-                        }
-                    };
-
-                    container.addEventListener('click', clickHandler);
-                    container.addEventListener('keydown', keydownHandler);
-                    container.addEventListener('blur', blurHandler, true);
-
-                    // Tároljuk
-                    container._p213ClickHandler = clickHandler;
-                    container._p213KeydownHandler = keydownHandler;
-                    container._p213BlurHandler = blurHandler;
+                if (e.target.closest('#add-note-btn')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    update213NotesInFirestore(null, null, false, true);
+                    return;
                 }
+
+                const deleteBtn = e.target.closest('.delete-note-btn');
+                if (deleteBtn && !deleteBtn.disabled) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const index = parseInt(deleteBtn.dataset.index);
+
+                    if (confirm('Biztosan törli a rendelést?')) {
+                        update213NotesInFirestore(index, null, true).catch(error => {
+                            alert('Hiba történt a törlés során: ' + error.message);
+                        });
+                    }
+                }
+            };
+
+            const keydownHandler = (e) => {
+                if (activeTab !== '213') return;
+                if (e.target.classList.contains('note-input') && e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.blur();
+                }
+            };
+
+            const blurHandler = (e) => {
+                if (activeTab !== '213') return;
+                if (e.target.classList.contains('note-input')) {
+                    const input = e.target;
+                    const index = parseInt(input.closest('.note-item').dataset.index);
+                    const newValue = input.value.trim();
+                    update213NotesInFirestore(index, newValue, false);
+                }
+            };
+
+            container.addEventListener('click', clickHandler);
+            container.addEventListener('keydown', keydownHandler);
+            container.addEventListener('blur', blurHandler, true);
+
+            // Tároljuk
+            container._p213ClickHandler = clickHandler;
+            container._p213KeydownHandler = keydownHandler;
+            container._p213BlurHandler = blurHandler;
+        }
 
         async function handle213Click(e) {
-                    // Ez a függvény már NEM használt
-                }
+            // Ez a függvény már NEM használt
+        }
 
         async function handle213Keydown(e) {
-                    // Ez a függvény már NEM használt
-                }
+            // Ez a függvény már NEM használt
+        }
 
         async function handle213Blur(e) {
-                    // Ez a függvény már NEM használt
-                }
+            // Ez a függvény már NEM használt
+        }
 
         async function update213NotesInFirestore(index, newValue = null, isDelete = false, isAdd = false) {
-                    // ✅ 213-as rendelések törléséhez nem kell admin jog
-                    if (isDelete) {
-                        // Törlés engedélyezve mindenki számára
-                    } else if (currentUserProfile.role !== 'admin') {
-                        // Hozzáadás és módosítás csak adminoknak
-                        return;
+            // ✅ 213-as rendelések törléséhez nem kell admin jog
+            if (isDelete) {
+                // Törlés engedélyezve mindenki számára
+            } else if (currentUserProfile.role !== 'admin') {
+                // Hozzáadás és módosítás csak adminoknak
+                return;
+            }
+
+            const locationRef = doc(db, "locations", "213");
+
+            try {
+                const docSnap = await getDoc(locationRef);
+                let notes = [...p213Notes];
+
+                if (isDelete) {
+                    if (notes.length === 1) {
+                        notes = [''];
+                    } else {
+                        notes.splice(index, 1);
                     }
-
-                    const locationRef = doc(db, "locations", "213");
-
-                    try {
-                        const docSnap = await getDoc(locationRef);
-                        let notes = [...p213Notes];
-
-                        if (isDelete) {
-                            if (notes.length === 1) {
-                                notes = [''];
-                            } else {
-                                notes.splice(index, 1);
-                            }
-                        } else if (isAdd) {
-                            notes.unshift('');
-                        } else if (newValue !== null) {
-                            if (index >= 0 && index < notes.length) {
-                                notes[index] = newValue;
-                            }
-                        }
-
-                        if (notes.length === 0) {
-                            await setDoc(locationRef, { notes: [''] }, { merge: true });
-                        } else {
-                            await setDoc(locationRef, { notes }, { merge: true });
-                        }
-                    } catch (error) {
-                        console.error('Firestore hiba:', error);
-                        throw error;
+                } else if (isAdd) {
+                    notes.unshift('');
+                } else if (newValue !== null) {
+                    if (index >= 0 && index < notes.length) {
+                        notes[index] = newValue;
                     }
                 }
 
+                if (notes.length === 0) {
+                    await setDoc(locationRef, { notes: [''] }, { merge: true });
+                } else {
+                    await setDoc(locationRef, { notes }, { merge: true });
+                }
+            } catch (error) {
+                console.error('Firestore hiba:', error);
+                throw error;
+            }
+        }
+
         function renderAirportContent() {
-                    const isAdmin = currentUserProfile.role === 'admin';
-                    const isCurrentUserCheckedIn = airportMembers.some(m => m.uid === currentUserProfile.uid);
-                    const isCurrentUserInEmirates = emiratesMembers.some(m => m.uid === currentUserProfile.uid);
-                    const canUndoAirport = lastCheckedOut && lastCheckedOut.memberData.uid === currentUserProfile.uid && lastCheckedOut.locationName === 'Reptér' && lastCheckedOut.memberType === 'members';
-                    const canUndoEmirates = lastCheckedOut && lastCheckedOut.memberData.uid === currentUserProfile.uid && lastCheckedOut.locationName === 'Reptér' && lastCheckedOut.memberType === 'emiratesMembers';
+            const isAdmin = currentUserProfile.role === 'admin';
+            const isCurrentUserCheckedIn = airportMembers.some(m => m.uid === currentUserProfile.uid);
+            const isCurrentUserInEmirates = emiratesMembers.some(m => m.uid === currentUserProfile.uid);
+            const canUndoAirport = lastCheckedOut && lastCheckedOut.memberData.uid === currentUserProfile.uid && lastCheckedOut.locationName === 'Reptér' && lastCheckedOut.memberType === 'members';
+            const canUndoEmirates = lastCheckedOut && lastCheckedOut.memberData.uid === currentUserProfile.uid && lastCheckedOut.locationName === 'Reptér' && lastCheckedOut.memberType === 'emiratesMembers';
 
-                    // ✅ Emirates sor geofencing ellenőrzés
-                    let isAirportGeoBlocked = false;
-                    let isEmiratesGeoBlocked = false;
-                    let titleSuffix = '';
+            // ✅ Emirates sor geofencing ellenőrzés
+            let isAirportGeoBlocked = false;
+            let isEmiratesGeoBlocked = false;
+            let airportTitleSuffix = '';
+            let emiratesTitleSuffix = '';
 
-                    if (geofencedLocations.hasOwnProperty('Reptér')) {
-                        const isInside = geofencedLocations['Reptér'].isInside;
-                        if (!isInside) {
-                            isAirportGeoBlocked = true;
-                            isEmiratesGeoBlocked = true; // ✅ Emirates is blokkolva zónán kívül
-                            titleSuffix = `
+            // Reptér geofence check
+            if (geofencedLocations.hasOwnProperty('Reptér')) {
+                const isInside = geofencedLocations['Reptér'].isInside;
+                if (!isInside) {
+                    isAirportGeoBlocked = true;
+                    airportTitleSuffix = `
                     <span class="inline-block align-middle ml-2" title="Zónán kívül">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
                         </svg>
                     </span>`;
-                        } else {
-                            titleSuffix = `
+                } else {
+                    airportTitleSuffix = `
                     <span class="inline-block align-middle ml-2" title="Zónán belül">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20">
                             <rect width="20" height="20" rx="3" fill="#22c55e" />
                             <path fill-rule="evenodd" d="M9.47 5.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 01-1.06 1.06L10 6.81l-3.72 3.72a.75.75 0 01-1.06-1.06l4.25-4.25z" clip-rule="evenodd" fill="white" />
                         </svg>
                     </span>`;
-                        }
-                    }
+                }
+            }
 
-                    tabContent.innerHTML = `
+            // Emirates geofence check (Reper geofence applies to Emirates too by rule, but checking standalone just in case)
+            // But usually Emirates is strictly inside Reptér. The logic "isEmiratesGeoBlocked = true" was used if Reptér is blocked.
+            if (isAirportGeoBlocked) {
+                isEmiratesGeoBlocked = true;
+                emiratesTitleSuffix = airportTitleSuffix;
+            } else {
+                emiratesTitleSuffix = `
+                    <span class="inline-block align-middle ml-2" title="Zónán belül">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20">
+                            <rect width="20" height="20" rx="3" fill="#22c55e" />
+                            <path fill-rule="evenodd" d="M9.47 5.22a.75.75 0 011.06 0l4.25 4.25a.75.75 0 01-1.06 1.06L10 6.81l-3.72 3.72a.75.75 0 01-1.06-1.06l4.25-4.25z" clip-rule="evenodd" fill="white" />
+                        </svg>
+                    </span>`;
+            }
+
+            tabContent.innerHTML = `
             <div class="flex flex-col gap-4 h-full">
                 <div class="flex gap-2 mb-2">
                     <button id="airport-tab" class="${getSubTabClasses('airport', airportActiveSubTab)}">
@@ -1988,31 +1986,29 @@
                     ${airportActiveSubTab === 'airport' ? `
                         <div class="location-content-wrapper flex flex-row gap-4 h-full">
                             <div class="flex-1 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 overflow-y-auto">
-                                <h4 class="font-bold text-lg mb-3 border-b border-gray-300 dark:border-gray-600 pb-2 sticky top-0 bg-gray-50 dark:bg-gray-700/50 -mt-4 -mx-4 px-4 pt-4">Reptéri Sor (${airportMembers.length}) ${titleSuffix}</h4>
+                                <h4 class="font-bold text-lg mb-3 border-b border-gray-300 dark:border-gray-600 pb-2 sticky top-0 bg-gray-50 dark:bg-gray-700/50 -mt-4 -mx-4 px-4 pt-4">Reptéri Sor (${airportMembers.length}) ${airportTitleSuffix}</h4>
                                 <div id="member-list" class="space-y-2">
-                                   ${airportMembers.length > 0 ? airportMembers.map(m => {
-                        let displayName = m.displayName;
-                        const isFlame = displayName.includes('__FLAME__');
-                        const isFoodPhone = displayName.includes('🍔 ☎️');
-                        displayName = displayName.replace('__FLAME__', '').trim();
-                        const itemClasses = isFlame
-                            ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
-                            : (isFoodPhone
-                                ? "member-item bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 p-2 rounded-md text-sm flex justify-between items-center"
-                                : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center");
+                                   ${airportMembers.length > 0 ? airportMembers.filter(m => m && m.uid).map(m => {
+                let displayName = m.displayName || 'Ismeretlen';
+                const isFlame = displayName.includes('__FLAME__');
+                displayName = displayName.replace('__FLAME__', '').trim();
+                const itemClasses = isFlame
+                    ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
+                    : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center";
 
-                        return `
-                                        <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}">
-                                            <span class="text-base font-bold">${displayName}${m.checkInTime ? ' - ' + m.checkInTime : ''}</span>
-                                            ${isAdmin ? `
-                                                <button class="kick-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900" data-uid="${m.uid}" data-user-type="${m.userType}">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                                    </svg>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                   }).join('') : '<p class="text-sm text-gray-500">Nincs itt senki.</p>'}
+                return `
+                                            <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}" data-member-json='${JSON.stringify(m)}'>
+                                                <span class="text-base font-bold">${displayName}${m.checkInTime ? ' - ' + m.checkInTime : ''}</span>
+                                                ${isAdmin ? `
+                                                    <button class="kick-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900" data-uid="${m.uid}" data-user-type="${m.userType}">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        `;
+            }).join('') : '<p class="text-sm text-gray-500">Nincs itt senki.</p>'}
                                 </div>
                             </div>
                             <div class="action-buttons-container">
@@ -2022,9 +2018,8 @@
                                 <button id="food-phone-btn" class="bg-blue-500 text-white font-semibold hover:bg-blue-600 transition" ${!isCurrentUserCheckedIn || isAirportGeoBlocked ? 'disabled' : ''}>🍔📞</button>
                             </div>
                         </div>
-                    ` : ''
-                    }
-                    ${ airportActiveSubTab === 'orders' ? `
+                    ` : ''}
+                    ${airportActiveSubTab === 'orders' ? `
                         <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex flex-col h-full">
                             <div class="flex justify-between items-center mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">
                                 <h4 class="font-bold text-lg">Reptéri Sor</h4>
@@ -2070,31 +2065,29 @@
                     ${airportActiveSubTab === 'emirates' ? `
                         <div class="location-content-wrapper flex flex-row gap-4 h-full">
                             <div class="flex-1 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 overflow-y-auto">
-                                <h4 class="font-bold text-lg mb-3 border-b border-gray-300 dark:border-gray-600 pb-2 sticky top-0 bg-gray-50 dark:bg-gray-700/50 -mt-4 -mx-4 px-4 pt-4">Emirates Sor (${emiratesMembers.length}) ${titleSuffix}</h4>
+                                <h4 class="font-bold text-lg mb-3 border-b border-gray-300 dark:border-gray-600 pb-2 sticky top-0 bg-gray-50 dark:bg-gray-700/50 -mt-4 -mx-4 px-4 pt-4">Emirates Sor (${emiratesMembers.length}) ${emiratesTitleSuffix}</h4>
                                 <div id="member-list" class="space-y-2">
-                                   ${emiratesMembers.length > 0 ? emiratesMembers.map(m => {
-                        let displayName = m.displayName;
-                        const isFlame = displayName.includes('__FLAME__');
-                        const isFoodPhone = displayName.includes('🍔 ☎️');
-                        displayName = displayName.replace('__FLAME__', '').trim();
-                        const itemClasses = isFlame
-                            ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
-                            : (isFoodPhone
-                                ? "member-item bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 p-2 rounded-md text-sm flex justify-between items-center"
-                                : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center");
+                                   ${emiratesMembers.length > 0 ? emiratesMembers.filter(m => m && m.uid).map(m => {
+                let displayName = m.displayName || 'Ismeretlen';
+                const isFlame = displayName.includes('__FLAME__');
+                displayName = displayName.replace('__FLAME__', '').trim();
+                const itemClasses = isFlame
+                    ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
+                    : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center";
 
-                        return `
-                                        <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}">
-                                            <span class="text-base font-bold">${displayName}${m.checkInTime ? ' - ' + m.checkInTime : ''}</span>
-                                            ${isAdmin ? `
-                                                <button class="kick-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900" data-uid="${m.uid}" data-user-type="${m.userType}">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                                    </svg>
-                                                </button>
-                                            ` : ''}
-                                        </div>
-                                   }).join('') : '<p class="text-sm text-gray-500">Nincs itt senki.</p>'}
+                return `
+                                            <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}" data-member-json='${JSON.stringify(m)}'>
+                                                <span class="text-base font-bold">${displayName}${m.checkInTime ? ' - ' + m.checkInTime : ''}</span>
+                                                ${isAdmin ? `
+                                                    <button class="kick-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900" data-uid="${m.uid}" data-user-type="${m.userType}">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        `;
+            }).join('') : '<p class="text-sm text-gray-500">Nincs itt senki.</p>'}
                                 </div>
                             </div>
                             <div class="action-buttons-container">
@@ -2104,11 +2097,10 @@
                                 <button id="emirates-food-phone-btn" class="bg-blue-500 text-white font-semibold hover:bg-blue-600 transition" ${!isCurrentUserInEmirates || isEmiratesGeoBlocked ? 'disabled' : ''}>🍔📞</button>
                             </div>
                         </div>
-                    ` : ''
-                    }
-                </div >
-            </div >
-                        `;
+                    ` : ''}
+                </div>
+            </div>
+         `;
 
             document.getElementById('airport-tab').addEventListener('click', () => {
                 airportActiveSubTab = 'airport';
@@ -2126,10 +2118,10 @@
             });
 
             if (isAdmin) {
-                if (airportActiveSubTab === 'airport') {
+                if (airportActiveSubTab === 'emirates') {
+                    initSortableList('Emirates', 'members');
+                } else if (airportActiveSubTab === 'airport') {
                     initSortableList('Reptér', 'members');
-                } else if (airportActiveSubTab === 'emirates') {
-                    initSortableList('Reptér', 'emiratesMembers');
                 } else if (airportActiveSubTab === 'orders') {
                     if (isAdmin) {
                         initSortableNotes('Reptér');
@@ -2149,7 +2141,7 @@
             const isAdmin = currentUserProfile.role === 'admin';
 
             tabContent.innerHTML = `
-                        < div class= "flex flex-col gap-4 h-full" >
+            <div class="flex flex-col gap-4 h-full">
                 <div class="flex gap-2 mb-2">
                     <button id="v-class-members-tab" class="${getSubTabClasses('members', vClassActiveSubTab)}">
                         V-Osztály Sor
@@ -2162,8 +2154,8 @@
                 <div id="v-class-subtab-content" class="flex-1 flex flex-col min-h-0">
                     ${vClassActiveSubTab === 'members' ? renderVClassMembersTab() : renderOrdersTab()}
                 </div>
-            </div >
-                        `;
+            </div>
+         `;
 
             document.getElementById('v-class-members-tab').addEventListener('click', () => {
                 vClassActiveSubTab = 'members';
@@ -2191,7 +2183,7 @@
         function renderOrdersTab() {
             const isAdmin = currentUserProfile.role === 'admin';
             return `
-                        < div class= "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex flex-col h-full" >
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 flex flex-col h-full">
                 <div class="flex justify-between items-center mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">
                     <h4 class="font-bold text-lg">V-Osztály Sor</h4>
                     ${isAdmin ? `
@@ -2231,8 +2223,8 @@
                         `).join('')}
                     </div>
                 </div>
-            </div >
-                        `;
+            </div>
+        `;
         }
 
         function renderVClassMembersTab() {
@@ -2240,31 +2232,30 @@
             const listTitle = LOCATION_TITLES['V-Osztály'] || 'V-Osztály Sor';
 
             return `
-                        < div class= "bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 h-full flex flex-col" >
+            <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 h-full flex flex-col">
                 <h4 class="font-bold text-lg mb-3 border-b border-gray-300 dark:border-gray-600 pb-2">${listTitle} (${vClassMembers.length})</h4>
                 <div id="member-list" class="space-y-2 overflow-y-auto flex-grow">
                    ${vClassMembers.length > 0 ? vClassMembers.map(m => {
                 let displayName = m.displayName;
-                const isFoodPhone = displayName.includes('🍔 ☎️');
+                const isFlame = displayName.includes('__FLAME__');
                 displayName = displayName.replace('__FLAME__', '').trim();
                 const itemClasses = isFlame
                     ? "member-item bg-rose-100 dark:bg-red-900/50 border-2 border-rose-500 p-2 rounded-md text-sm flex justify-between items-center"
-                    : (isFoodPhone
-                        ? "member-item bg-blue-100 dark:bg-blue-900/50 border-2 border-blue-500 p-2 rounded-md text-sm flex justify-between items-center"
-                        : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center");
+                    : "member-item bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm text-sm flex justify-between items-center";
 
                 return `
-                        <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}">
-                            <span class="text-base font-bold">${displayName}</span>
-                            ${isAdmin ? `
-                                <button class="kick-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900" data-uid="${m.uid}" data-user-type="${m.userType}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            ` : ''}
-                        </div>
-                   }).join('') : '<p class="text-sm text-gray-500">Nincs itt senki.</p>'}
+                            <div class="${itemClasses}" data-uid="${m.uid}" data-user-type="${m.userType}">
+                                <span class="text-base font-bold">${displayName}</span>
+                                ${isAdmin ? `
+                                    <button class="kick-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100 dark:hover:bg-red-900" data-uid="${m.uid}" data-user-type="${m.userType}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `;
+            }).join('') : '<p class="text-sm text-gray-500">Nincs itt senki.</p>'}
                 </div>
             </div>
         `;
@@ -2570,13 +2561,17 @@
                         const locationRef = doc(db, "locations", locationName);
                         let updateData = {};
 
-                        if (locationName === 'Reptér') {
-                            updateData[memberType] = updatedMembers;
+                        if (locationName === 'Reptér' && memberType === 'emirates') {
+                            // Emirates is now a standalone docs, but dragInit sends two args.
+                            // However, initSortableList is called with (locationName, memberType).
+                            // If we want to sort Emirates, we need to handle it.
+                            // Actually, let's fix the call site or handle it here.
+                            const emiratesRef = doc(db, "locations", "Emirates");
+                            await updateDoc(emiratesRef, { members: updatedMembers });
                         } else {
                             updateData.members = updatedMembers;
+                            await updateDoc(locationRef, updateData);
                         }
-
-                        await updateDoc(locationRef, updateData);
 
                     } catch (error) {
                         console.error("Hiba a sorrend mentésekor:", error);
@@ -2977,10 +2972,10 @@
 
             await checkoutFromAllLocations();
 
-            const locationRef = doc(db, "locations", "Reptér");
+            const locationRef = doc(db, "locations", "Emirates");
             try {
                 await updateDoc(locationRef, {
-                    emiratesMembers: arrayUnion(userObject)
+                    members: arrayUnion(userObject)
                 });
             } catch (e) {
                 console.error("Hiba az Emirates beléptetés során:", e);
@@ -2990,24 +2985,25 @@
         async function checkOutEmirates() {
             if (!currentUserProfile) return;
 
-            const locationRef = doc(db, "locations", "Reptér");
+            const locationRef = doc(db, "locations", "Emirates");
             const docSnap = await getDoc(locationRef);
             if (!docSnap.exists()) return;
 
-            const emiratesMembers = docSnap.data().emiratesMembers || [];
+            const emiratesMembers = docSnap.data().members || [];
             const userIndex = emiratesMembers.findIndex(m => m.uid === currentUserProfile.uid);
             const memberToRemove = emiratesMembers[userIndex];
 
             if (memberToRemove) {
                 lastCheckedOut = {
-                    locationName: 'Reptér',
+                    locationName: 'Reptér', // UI works under Reptér tab
                     memberData: memberToRemove,
                     index: userIndex,
-                    memberType: 'emiratesMembers'
+                    memberType: 'members', // Now standard members in Emirates doc
+                    subLocation: 'Emirates' // Tag for restore
                 };
                 const updatedMembers = emiratesMembers.filter(m => m.uid !== currentUserProfile.uid);
                 try {
-                    await updateDoc(locationRef, { emiratesMembers: updatedMembers });
+                    await updateDoc(locationRef, { members: updatedMembers });
                 } catch (e) {
                     console.error("Hiba az Emirates kiléptetés során: ", e);
                 }
@@ -3015,13 +3011,15 @@
         }
 
         async function handleEmiratesFlameClick() {
-            if (!lastCheckedOut || lastCheckedOut.memberData.uid !== currentUserProfile.uid || lastCheckedOut.locationName !== 'Reptér' || lastCheckedOut.memberType !== 'emiratesMembers') return;
+            if (!lastCheckedOut ||
+                lastCheckedOut.memberData.uid !== currentUserProfile.uid ||
+                lastCheckedOut.subLocation !== 'Emirates') return;
 
             await checkoutFromAllLocations();
 
-            const locationRef = doc(db, "locations", "Reptér");
+            const locationRef = doc(db, "locations", "Emirates");
             const docSnap = await getDoc(locationRef);
-            let currentMembers = (docSnap.exists() && docSnap.data().emiratesMembers) ? docSnap.data().emiratesMembers : [];
+            let currentMembers = (docSnap.exists() && docSnap.data().members) ? docSnap.data().members : [];
 
             const memberToReinsert = {
                 ...lastCheckedOut.memberData,
@@ -3036,7 +3034,7 @@
             currentMembers.splice(lastCheckedOut.index, 0, memberToReinsert);
 
             try {
-                await updateDoc(locationRef, { emiratesMembers: currentMembers });
+                await updateDoc(locationRef, { members: currentMembers });
                 lastCheckedOut = null;
             } catch (e) {
                 console.error("Hiba az Emirates visszaállítás során: ", e);
@@ -3050,11 +3048,11 @@
             const flamePrefix = '🔥 ';
 
             const updateUserNameInEmirates = async (newDisplayName) => {
-                const locationRef = doc(db, "locations", "Reptér");
+                const locationRef = doc(db, "locations", "Emirates");
                 const docSnap = await getDoc(locationRef);
                 if (!docSnap.exists()) return;
 
-                const emiratesMembers = docSnap.data().emiratesMembers || [];
+                const emiratesMembers = docSnap.data().members || [];
                 const updatedMembers = [...emiratesMembers];
                 const userIndex = updatedMembers.findIndex(m => m.uid === currentUserProfile.uid);
                 if (userIndex === -1) return;
@@ -3064,14 +3062,14 @@
                     displayName: newDisplayName
                 };
 
-                await updateDoc(locationRef, { emiratesMembers: updatedMembers });
+                await updateDoc(locationRef, { members: updatedMembers });
             };
 
-            const locationRef = doc(db, "locations", "Reptér");
+            const locationRef = doc(db, "locations", "Emirates");
             const docSnap = await getDoc(locationRef);
             if (!docSnap.exists()) return;
 
-            const emiratesMembers = docSnap.data().emiratesMembers || [];
+            const emiratesMembers = docSnap.data().members || [];
             const userIndex = emiratesMembers.findIndex(m => m.uid === currentUserProfile.uid);
             if (userIndex === -1) return;
 
@@ -3099,12 +3097,12 @@
         }
 
         async function kickUserFromEmirates(uid, userType) {
-            const locationRef = doc(db, "locations", "Reptér");
+            const locationRef = doc(db, "locations", "Emirates");
             const docSnap = await getDoc(locationRef);
             if (docSnap.exists()) {
-                const emiratesMembers = docSnap.data().emiratesMembers || [];
+                const emiratesMembers = docSnap.data().members || [];
                 const updatedMembers = emiratesMembers.filter(m => m.uid !== uid);
-                await updateDoc(locationRef, { emiratesMembers: updatedMembers });
+                await updateDoc(locationRef, { members: updatedMembers });
             }
         }
 
@@ -3365,12 +3363,24 @@
                     needsUpdate = true;
                 }
                 if (data.emiratesMembers && data.emiratesMembers.some(m => m.uid === currentUserProfile.uid)) {
+                    // Deprecated: Clean up old emiratesMembers from Reptér if found
                     updatedData.emiratesMembers = data.emiratesMembers.filter(m => m.uid !== currentUserProfile.uid);
                     needsUpdate = true;
                 }
 
                 if (needsUpdate) {
                     batch.update(airportRef, updatedData);
+                }
+            }
+
+            // Also check out from standalone Emirates
+            const emiratesRef = doc(db, "locations", "Emirates");
+            const emiratesSnap = await getDoc(emiratesRef);
+            if (emiratesSnap.exists()) {
+                const members = emiratesSnap.data().members || [];
+                if (members.some(m => m.uid === currentUserProfile.uid)) {
+                    const updatedMembers = members.filter(m => m.uid !== currentUserProfile.uid);
+                    batch.update(emiratesRef, { members: updatedMembers });
                 }
             }
 
