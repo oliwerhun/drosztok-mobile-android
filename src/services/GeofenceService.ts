@@ -112,7 +112,7 @@ export const GEOFENCED_LOCATIONS: Record<string, GeofenceZone> = {
     polygon: [
       { lat: 47.419958, lng: 19.244589 },
       { lat: 47.417475, lng: 19.251907 },
-      { lat: 47.418049, lng: 19.255322 },
+      { lat: 47.419958, lng: 19.244589 },
       // Extra points for Emirates extended zone
       { lat: 47.4357860656793, lng: 19.259100477392558 },
       { lat: 47.43352831413943, lng: 19.270397453495274 },

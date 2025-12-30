@@ -19,7 +19,7 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
+	<string>1.6.21</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -27,14 +27,12 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.oliwerhun.drosztokmobile</string>
+				<string>com.oliwerhun.elitdroszt</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>LSMinimumSystemVersion</key>
 	<string>12.0</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -47,17 +45,18 @@
 		<true/>
 	</dict>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Az alkalmazásnak szüksége van a helyzetére a háttérben is.</string>
+	<string>Kérlek állítsd mindig-re! </string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Az alkalmazásnak szüksége van a helyzetére a háttérben is, hogy a diszpécser lássa a pozícióját.</string>
+	<string>A folyamatos helymeghatározás biztosítja a droszt-rendszer pontos működését a háttérben is.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Az alkalmazásnak szüksége van a helyzetére.</string>
+	<string>Az alkalmazásnak szüksége van a helyzetére! </string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
 		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>SplashScreen</string>

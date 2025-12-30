@@ -199,7 +199,8 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
             const allMet =
                 bgStatus === 'granted' &&
                 notifStatus === 'granted' &&
-                (isIos || systemSettingsConfirmed);
+                (isIos || systemSettingsConfirmed) &&
+                (isIos || isBatteryWhitelisted);
 
             console.log('🔍 [PERMISSION CHECK]', {
                 bgStatus,
@@ -353,7 +354,7 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
         if (!Device.manufacturer) return "";
         const m = Device.manufacturer.toLowerCase();
 
-        if (m.includes('samsung')) return "\n\nNem korlátozott";
+        if (m.includes('samsung')) return "\n\nHáttérben végzett tev.: Engedélyezése (VAGY Nem korlátozott)";
         if (m.includes('huawei')) return "\n\nAlkalmazásindítás: Kézi kezelés (KI) + Mind a 3 pipa BE";
         if (m.includes('xiaomi') || m.includes('redmi') || m.includes('poco')) return "\n\nNincs korlátozás + Automatikus indítás BE";
         if (m.includes('oppo') || m.includes('realme') || m.includes('oneplus')) return "\n\nHáttérben végzett tevékenység: BE";
@@ -504,11 +505,21 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
                             <Text style={styles.mainButtonText}>Beállítások megnyitása</Text>
                         </TouchableOpacity>
 
-                        {batterySettingsOpened && (
-                            <TouchableOpacity style={styles.nextButton} onPress={advanceStep}>
-                                <Text style={styles.nextButtonText}>Kész</Text>
-                            </TouchableOpacity>
-                        )}
+                        <View style={{ marginTop: 10, alignItems: 'center' }}>
+                            {isBatteryWhitelisted ? (
+                                <Text style={{ color: '#10b981', fontWeight: 'bold' }}>✓ Háttérfutás: Engedélyezve (Rendben)</Text>
+                            ) : (
+                                <Text style={{ color: '#ef4444', fontSize: 12 }}>❌ Háttérfutás: Korlátozva (Javítani kell!)</Text>
+                            )}
+                        </View>
+
+                        <TouchableOpacity
+                            style={[styles.nextButton, !isBatteryWhitelisted && styles.disabledButton]}
+                            onPress={advanceStep}
+                            disabled={!isBatteryWhitelisted}
+                        >
+                            <Text style={styles.nextButtonText}>Kész</Text>
+                        </TouchableOpacity>
                     </View>
                 );
 
@@ -530,10 +541,9 @@ export default function PermissionGuard({ children }: { children: React.ReactNod
             <View style={styles.container}>
                 <View style={styles.progressBar}>
                     <View style={[styles.progressFill, {
-                        width:
-                            currentStep === 'location' ? '25%' :
-                                currentStep === 'notification' ? '50%' :
-                                    currentStep === 'unused_apps' ? '75%' : '100%'
+                        width: Platform.OS === 'ios'
+                            ? (currentStep === 'location' ? '33%' : currentStep === 'notification' ? '66%' : '100%')
+                            : (currentStep === 'location' ? '25%' : currentStep === 'notification' ? '50%' : currentStep === 'unused_apps' ? '75%' : '100%')
                     }]} />
                 </View>
                 <View style={styles.content}>

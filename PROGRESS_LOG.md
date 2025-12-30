@@ -3228,3 +3228,40 @@ draggingTab: {
 
 ---
 *Implementálva: 2025.12.16. 11:35*
+
+---
+
+# 🎉 MÉRFÖLDKŐ: v1.6.21 - Emirates Zóna & iOS Release Milestone
+
+**Dátum:** 2025.12.30.
+**Verzió:** v1.6.21 (Android & iOS Milestone)
+
+## Főbb Eredmények
+
+### 1. Emirates Zóna Módosítás (Kiszélesítés) ✅
+- **Koordináta frissítés:** Az E3 pontot áthelyeztük az E1 pontra.
+- **Eredmény:** A zóna nyugati irányba kiszélesedett, az "extra" terület kezdeti háromszöge eltűnt, így egyenesebb és szélesebb határvonal jött létre.
+- **Vizualizáció:** Új térkép-archívum (`emirates_zone_map.html`) és screenshotok készültek a pontok jelölésével.
+
+### 2. Permission Guard iOS Adaptáció ✅
+- **Platform-specifikus szűrés:** Az iOS verzió mostantól automatikusan átugorja a 3. (Unused Apps) és 4. (Battery) lépéseket.
+- **UI Finomítás:** A folyamatjelző csík (Progress Bar) iOS-en mostantól 3 lépésre van osztva (33% -> 66% -> 100%), Androidon maradt az 5 lépés.
+
+### 3. Akkumulátor Optimalizálás UI Finomítás (v1.6.20) ✅
+- **Egyértelmű státusz:** "Háttérfutás: Engedélyezve (Rendben)" vs "Háttérfutás: Korlátozva (Javítani kell!)".
+- **Szigorú kényszerítés:** A "Kész" gomb inaktív marad, amíg a rendszer nem jelzi az optimalizálás kikapcsolását.
+- **Samsung specifikus tipp:** Frissítve a "Háttérben végzett tev.: Engedélyezése" szöveggel.
+
+### 4. Build & Install Release Workflow ✅
+- **Android:** Sikeres `assembleRelease` build, régi verzió automatikus törlése és új APK telepítése.
+- **iOS:** Sikeres `prebuild` és Xcode Release build.
+- **Környezet javítás:** iOS build hibák (Pods, DerivedData, "No such module Expo") elhárítása és Xcode Signing beállítási segédlet.
+
+## Módosított fájlok
+- `src/services/GeofenceService.ts` - Emirates zóna pontjai
+- `src/components/PermissionGuard.tsx` - Akku UI, iOS logika, Progress Bar
+- `app.json`, `package.json` - Verziószám frissítés
+- `PROGRESS_LOG.md` - Ez a napló
+
+---
+*Mérföldkő elérve: 2025.12.30. 18:00*
