@@ -308,18 +308,57 @@ export const startLocationTracking = async () => {
     }
 
     console.log('Starting location updates with AGGRESSIVE options (v1.6.12)...');
-    await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 3000,
-        distanceInterval: 0, // Update on ANY movement
-        deferredUpdatesInterval: 0, // Immediate delivery
-        pausesUpdatesAutomatically: false, // Prevent OS pause
-        showsBackgroundLocationIndicator: true,
-        foregroundService: {
-            notificationTitle: "Elitdroszt",
-            notificationBody: "Be vagy jelentkezve (Aktív Követés).",
-        },
-    });
+    try {
+        await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+            accuracy: Location.Accuracy.High,
+            timeInterval: 3000,
+            distanceInterval: 0, // Update on ANY movement
+            deferredUpdatesInterval: 0, // Immediate delivery
+            pausesUpdatesAutomatically: false, // Prevent OS pause
+            showsBackgroundLocationIndicator: true,
+            foregroundService: {
+                notificationTitle: "Elitdroszt",
+                notificationBody: "Be vagy jelentkezve (Aktív Követés).",
+            },
+        });
+    } catch (error: any) {
+        console.error('Error starting location updates:', error);
+        // Handle Android 12+ Foreground Service restriction:
+        // "Foreground service cannot be started when the application is in the background"
+        if (error.message?.includes('Foreground service') || error.code === 'E_FOREGROUND_SERVICE') {
+            console.log('⚠️ App is in background, scheduling retry when foregrounded...');
+
+            // Set up a one-time listener to retry when app becomes active
+            const subscription = AppState.addEventListener('change', async (nextAppState) => {
+                if (nextAppState === 'active') {
+                    console.log('🔄 App foregrounded -> Retrying startLocationUpdatesAsync');
+                    subscription.remove(); // Unsubscribe immediately
+                    try {
+                        await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+                            accuracy: Location.Accuracy.High,
+                            timeInterval: 3000,
+                            distanceInterval: 0,
+                            deferredUpdatesInterval: 0,
+                            pausesUpdatesAutomatically: false,
+                            showsBackgroundLocationIndicator: true,
+                            foregroundService: {
+                                notificationTitle: "Elitdroszt",
+                                notificationBody: "Be vagy jelentkezve (Aktív Követés).",
+                            },
+                        });
+                        console.log('✅ Retry successful: Location tracking started.');
+                    } catch (retryError) {
+                        console.error('❌ Retry failed:', retryError);
+                    }
+                }
+            });
+
+            // Return true to pretend success so LoginScreen doesn't show an error alert.
+            // Tracking will start as soon as the user opens the app (which they must do to see the dashboard anyway).
+            return true;
+        }
+        throw error; // Re-throw other errors (e.g. permission issues)
+    }
 
     // 2. Start Geofencing Fallback (if checked in)
     try {

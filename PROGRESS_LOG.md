@@ -3,6 +3,31 @@
 
 ---
 
+## 2026.01.01. - v1.6.27: Hotfix + Web Admin Features
+
+### Változások
+1. **ANDROID HOTFIX (Foreground Service):**
+   - **Hiba:** Android 12+ alatt "Foreground service cannot be started from background" crash.
+   - **Javítás:** `LocationTrackingService.ts`-ben `startLocationUpdatesAsync` try-catch blokkba téve. Ha háttérben van, `AppState` listenerrel várakozik, és Foreground-ba téréskor automatikusan újrapróbálja.
+2. **WEB ADMIN (index.html):**
+   - **Térkép Funkciók:**
+     - Sofőr keresés (URH).
+     - Automatikus követés (Auto-follow).
+     - Stopper (Play/Pause/Reset).
+   - **Mobil Tiltás (Security):**
+     - Overlay, ha nem asztali gépről érkezik.
+     - "Android App letöltése" gomb a tiltó képernyőn. (Link: `elitdroszt.hu/apk/`)
+   - **Letöltés Automatizálás:** `index.php` redirect script létrehozva a szerverhez.
+3. **RELEASE:**
+   - Standalone APK 1.6.27 build (`/Users/oliwer/build/`).
+
+### Módosított fájlok
+- `src/services/LocationTrackingService.ts`: Retry logic.
+- `index.html`: Feature porting + Security overlay.
+- `app.json`, `package.json`: Verzió bump (1.6.27).
+
+---
+
 ## 2025.12.16. - v1.1.7: Reptér Tab Fix + Verziószám + Background Tracking
 
 ### Változások

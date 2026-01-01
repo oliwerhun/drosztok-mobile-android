@@ -38,6 +38,79 @@
         }
     </style>
 
+    <!-- Mobile Block Overlay Style & Script -->
+    <style>
+        #mobile-block-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.98);
+            color: white;
+            z-index: 10000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        #mobile-block-overlay h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #ef4444;
+        }
+
+        #mobile-block-overlay p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+
+        #mobile-block-overlay .icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+    <script>
+        function checkMobileAccess() {
+            // 1. Standard User Agent Check
+            const ua = navigator.userAgent;
+            const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
+
+            // 2. iPadOS 13+ Desktop Mode Check (MacIntel + TouchPoints)
+            const isIPadDesktop = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+            // 3. Android Desktop Mode "Request Desktop Site" Check
+            // Usually has touch points, but screen width (in CSS pixels) is smallish or detection via touch
+            // We use a combination: Touch supported AND screen width < 1024 OR explicitly mobile dimensions
+            // Note: Some desktops have touch, so we check screen width carefully.
+            const isTouch = (navigator.maxTouchPoints > 0) || ('ontouchstart' in window);
+            const isSmallScreen = window.screen.width < 1024;
+
+            // Heuristic: If it has touch AND is small screen, it's likely a mobile/tablet trying to be desktop
+            // EXCEPTION: Small touch laptops? Rare in this context.
+            const isLikelyMobileDevice = isTouch && isSmallScreen;
+
+            const blockElement = document.getElementById('mobile-block-overlay');
+
+            if (isMobileUA || isIPadDesktop || isLikelyMobileDevice) {
+                if (blockElement) blockElement.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            } else {
+                if (blockElement) blockElement.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+
+        window.addEventListener('load', checkMobileAccess);
+        window.addEventListener('resize', checkMobileAccess);
+        document.addEventListener('DOMContentLoaded', checkMobileAccess);
+    </script>
+
+
     <style>
         html,
         body {
@@ -241,6 +314,25 @@
     class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 antialiased transition-colors duration-300 h-full">
 
     <div id="dispatch-popup-container"></div>
+
+    <!-- Mobile Block Overlay -->
+    <div id="mobile-block-overlay">
+        <div class="icon">📱🚫</div>
+        <h1>Mobil eszköz nem támogatott</h1>
+        <p>Kérlek használd a <b>Drosztok Mobil Applikációt</b>!</p>
+
+        <a href="https://elitdroszt.hu/apk/"
+            class="mt-6 px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-lg transition transform hover:scale-105 flex items-center gap-3 no-underline text-xl"
+            style="text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Android App letöltése
+        </a>
+    </div>
+
 
     <div class="h-full">
 
@@ -534,6 +626,11 @@
 
         let locationWatcherId = null;
         let lastLocationUpdateTime = 0;
+        // Map Feature Variables
+        let trackedDriverId = null;
+        let stopwatchInterval = null;
+        let stopwatchTime = 0;
+        let stopwatchRunning = false;
         const geofencedLocations = {
             'Akadémia': {
                 polygon: [
@@ -1294,8 +1391,14 @@
                 unsubscribeLocationListener = null;
             }
             if (unsubscribeMapListener) {
-                unsubscribeMapListener();
                 unsubscribeMapListener = null;
+            }
+            // Clear Stopwatch on tab switch
+            if (stopwatchInterval) {
+                clearInterval(stopwatchInterval);
+                stopwatchInterval = null;
+                stopwatchRunning = false;
+                stopwatchTime = 0;
             }
 
             activeTab = tabName;
@@ -1329,13 +1432,43 @@
             tabContent.innerHTML = `
             <div id="map-container" class="h-full w-full relative">
                 <div id="map" class="h-full w-full rounded-lg"></div>
-                <div id="map-search-box" class="absolute top-3 right-3 z-[1000] bg-white p-1.5 rounded-lg shadow-lg flex items-center">
-                    <input type="text" id="map-search-input" placeholder="Sofőr száma..." class="px-2 py-1 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-black">
-                    <button id="map-search-btn" class="bg-indigo-600 text-white px-3 py-1 rounded-r-md hover:bg-indigo-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
+                
+                <!-- Controls Container -->
+                <div class="absolute top-3 right-3 z-[1000] flex flex-col gap-2 items-end">
+                    
+                    <!-- Search Box -->
+                    <div id="map-search-box" class="bg-white p-1.5 rounded-lg shadow-lg flex items-center">
+                        <input type="text" id="map-search-input" placeholder="URH" maxlength="3" class="w-16 px-2 py-1 border rounded-l-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-black text-center font-bold">
+                        <button id="map-search-btn" class="bg-indigo-600 text-white px-3 py-1 rounded-r-md hover:bg-indigo-700 min-w-[40px] flex justify-center items-center">
+                            <svg id="search-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                            </svg>
+                            <svg id="close-icon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Stopwatch Box -->
+                    <div id="map-stopwatch-box" class="bg-white p-1.5 rounded-lg shadow-lg flex items-center gap-2">
+                        <span id="stopwatch-display" class="font-mono font-bold text-xl text-gray-800 w-[60px] text-center">00:00</span>
+                        <div class="flex gap-1">
+                            <button id="stopwatch-toggle" class="bg-green-500 text-white p-1.5 rounded hover:bg-green-600 min-w-[32px] flex justify-center">
+                                <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                                </svg>
+                                <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 hidden" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            <button id="stopwatch-reset" class="bg-gray-500 text-white p-1.5 rounded hover:bg-gray-600 min-w-[32px] flex justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>`;
 
@@ -1350,8 +1483,93 @@
             const driverMarkers = {};
             const driverProfiles = {};
 
+            // Stopwatch Logic
+            const display = document.getElementById('stopwatch-display');
+            const toggleBtn = document.getElementById('stopwatch-toggle');
+            const resetBtn = document.getElementById('stopwatch-reset');
+            const playIcon = document.getElementById('play-icon');
+            const pauseIcon = document.getElementById('pause-icon');
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            };
+
+            const updateStopwatchUI = () => {
+                display.textContent = formatTime(stopwatchTime);
+                if (stopwatchRunning) {
+                    toggleBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                    toggleBtn.classList.add('bg-yellow-500', 'hover:bg-yellow-600');
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                } else {
+                    toggleBtn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                    toggleBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                    playIcon.classList.remove('hidden');
+                    pauseIcon.classList.add('hidden');
+                }
+            };
+
+            // Initialize UI state
+            updateStopwatchUI();
+
+            toggleBtn.addEventListener('click', () => {
+                if (stopwatchRunning) {
+                    stopwatchRunning = false;
+                    clearInterval(stopwatchInterval);
+                } else {
+                    stopwatchRunning = true;
+                    stopwatchInterval = setInterval(() => {
+                        stopwatchTime++;
+                        display.textContent = formatTime(stopwatchTime);
+                    }, 1000);
+                }
+                updateStopwatchUI();
+            });
+
+            resetBtn.addEventListener('click', () => {
+                stopwatchRunning = false;
+                clearInterval(stopwatchInterval);
+                stopwatchTime = 0;
+                updateStopwatchUI();
+            });
+
+            // Search Logic
+            const searchInput = document.getElementById('map-search-input');
+            const searchBtn = document.getElementById('map-search-btn');
+            const searchIcon = document.getElementById('search-icon');
+            const closeIcon = document.getElementById('close-icon');
+
+            const updateSearchUI = () => {
+                if (trackedDriverId) {
+                    searchBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                    searchBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                    searchIcon.classList.add('hidden');
+                    closeIcon.classList.remove('hidden');
+                    searchInput.disabled = true;
+                } else {
+                    searchBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    searchBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                    searchIcon.classList.remove('hidden');
+                    closeIcon.classList.add('hidden');
+                    searchInput.disabled = false;
+                    searchInput.value = '';
+                }
+            };
+
+            // Restore previous tracking state if returning to tab
+            updateSearchUI();
+
             const handleSearch = () => {
-                const searchTerm = document.getElementById('map-search-input').value.trim();
+                if (trackedDriverId) {
+                    // Stop tracking
+                    trackedDriverId = null;
+                    updateSearchUI();
+                    return;
+                }
+
+                const searchTerm = searchInput.value.trim();
                 if (!searchTerm) return;
 
                 let foundDriverId = null;
@@ -1362,18 +1580,23 @@
                     }
                 }
 
-                if (foundDriverId && driverMarkers[foundDriverId]) {
-                    const marker = driverMarkers[foundDriverId];
-                    const latLng = marker.getLatLng();
-                    map.flyTo(latLng, 16);
-                    marker.openPopup();
+                if (foundDriverId) {
+                    trackedDriverId = foundDriverId;
+                    updateSearchUI();
+
+                    if (driverMarkers[foundDriverId]) {
+                        const marker = driverMarkers[foundDriverId];
+                        const latLng = marker.getLatLng();
+                        map.flyTo(latLng, 16);
+                        marker.openPopup();
+                    }
                 } else {
                     alert('Sofőr nem található.');
                 }
             };
 
-            document.getElementById('map-search-btn').addEventListener('click', handleSearch);
-            document.getElementById('map-search-input').addEventListener('keydown', (e) => {
+            searchBtn.addEventListener('click', handleSearch);
+            searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     handleSearch();
                 }
@@ -1388,14 +1611,12 @@
                     const locationData = change.doc.data();
 
                     if (change.type === "added" || change.type === "modified") {
-                        // Mindig frissítjük a profilt, ha még nincs cache-elve
                         if (!driverProfiles[driverId]) {
                             try {
                                 const profileSnap = await getDoc(doc(db, "profiles", driverId));
                                 if (profileSnap.exists()) {
                                     driverProfiles[driverId] = profileSnap.data();
                                 } else {
-                                    // Ha nincs profil, placeholder
                                     driverProfiles[driverId] = { username: '?', licensePlate: 'N/A' };
                                 }
                             } catch (error) {
@@ -1408,7 +1629,7 @@
                         const popupContent = `<b>Hívójel:</b> ${profile.username}<br><b>Rendszám:</b> ${profile.licensePlate || 'N/A'}`;
 
                         const customIcon = L.divIcon({
-                            html: `<div class="driver-marker">${profile.username}</div>`,
+                            html: `<div class="driver-marker" style="${trackedDriverId === driverId ? 'border-color: #f59e0b; background-color: #f59e0b;' : ''}">${profile.username}</div>`,
                             className: '',
                             iconSize: [32, 32],
                             iconAnchor: [16, 16]
@@ -1422,11 +1643,22 @@
                             driverMarkers[driverId] = L.marker([locationData.lat, locationData.lng], { icon: customIcon }).addTo(map)
                                 .bindPopup(popupContent);
                         }
+
+                        // Auto-follow logic
+                        if (trackedDriverId === driverId) {
+                            map.panTo([locationData.lat, locationData.lng]);
+                        }
+
                     } else if (change.type === "removed") {
                         if (driverMarkers[driverId]) {
                             map.removeLayer(driverMarkers[driverId]);
                             delete driverMarkers[driverId];
                             delete driverProfiles[driverId];
+                        }
+                        if (trackedDriverId === driverId) {
+                            alert('A követett sofőr kijelentkezett.');
+                            trackedDriverId = null;
+                            updateSearchUI();
                         }
                     }
                 }

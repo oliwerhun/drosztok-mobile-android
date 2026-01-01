@@ -20,10 +20,42 @@ export default function MapScreen() {
     const { theme } = useTheme();
     const [drivers, setDrivers] = useState<DriverLocation[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Search & Tracking State
     const [searchQuery, setSearchQuery] = useState('');
+    const [trackedDriverUid, setTrackedDriverUid] = useState<string | null>(null);
+
+    // Stopwatch State
+    const [timer, setTimer] = useState(0);
+    const [isRunning, setIsRunning] = useState(false);
+
     const mapRef = useRef<MapView>(null);
     const driverProfilesCache = useRef<{ [key: string]: { username: string; licensePlate: string } }>({});
 
+    // Stopwatch Logic
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isRunning) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev + 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isRunning]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    };
+
+    const toggleStopwatch = () => setIsRunning(!isRunning);
+    const resetStopwatch = () => {
+        setIsRunning(false);
+        setTimer(0);
+    };
+
+    // Data Loading Logic
     useEffect(() => {
         if (userProfile?.role !== 'admin') return;
 
@@ -84,16 +116,40 @@ export default function MapScreen() {
         return () => unsubscribe();
     }, [userProfile]);
 
+    // Auto-follow Logic
+    useEffect(() => {
+        if (trackedDriverUid && mapRef.current) {
+            const driver = drivers.find(d => d.uid === trackedDriverUid);
+            if (driver) {
+                mapRef.current.animateToRegion({
+                    latitude: driver.lat,
+                    longitude: driver.lng,
+                    latitudeDelta: 0.005,
+                    longitudeDelta: 0.005,
+                }, 500);
+            }
+        }
+    }, [drivers, trackedDriverUid]);
+
+
     const handleSearch = () => {
+        if (trackedDriverUid) {
+            // Stop tracking
+            setTrackedDriverUid(null);
+            setSearchQuery('');
+            return;
+        }
+
         if (!searchQuery.trim()) return;
 
         const foundDriver = drivers.find(d => d.username?.toLowerCase() === searchQuery.toLowerCase());
-        if (foundDriver && mapRef.current) {
-            mapRef.current.animateToRegion({
+        if (foundDriver) {
+            setTrackedDriverUid(foundDriver.uid);
+            mapRef.current?.animateToRegion({
                 latitude: foundDriver.lat,
                 longitude: foundDriver.lng,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
+                latitudeDelta: 0.005,
+                longitudeDelta: 0.005,
             });
         }
     };
@@ -114,33 +170,48 @@ export default function MapScreen() {
         );
     }
 
-    if (Platform.OS === 'web') {
-        return (
-            <View style={styles.center}>
-                <Ionicons name="map-outline" size={64} color={theme === 'dark' ? '#fff' : '#333'} />
-                <Text style={{ fontSize: 18, fontWeight: 'bold', marginTop: 20, color: theme === 'dark' ? '#fff' : '#000' }}>
-                    Térkép nézet
-                </Text>
-                <Text style={{ marginTop: 10, color: '#666', textAlign: 'center' }}>
-                    A térkép funkció jelenleg csak a mobilalkalmazásban érhető el.
-                </Text>
-            </View>
-        );
-    }
-
     return (
         <View style={styles.container}>
-            <View style={styles.searchContainer}>
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Sofőr keresése (URH)..."
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    onSubmitEditing={handleSearch}
-                />
-                <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-                    <Ionicons name="search" size={20} color="white" />
-                </TouchableOpacity>
+            {/* Control Bar: Search + Stopwatch */}
+            <View style={styles.controlBar}>
+                {/* Search Section */}
+                <View style={styles.searchSection}>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="URH"
+                        placeholderTextColor="#999"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        onSubmitEditing={handleSearch}
+                        keyboardType="numeric"
+                        maxLength={3}
+                    />
+                    <TouchableOpacity
+                        style={[styles.iconButton, trackedDriverUid ? styles.cancelButton : styles.searchButton]}
+                        onPress={handleSearch}
+                    >
+                        <Ionicons name={trackedDriverUid ? "close" : "search"} size={20} color="white" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Stopwatch Section */}
+                <View style={styles.stopwatchSection}>
+                    <Text style={styles.timerText}>{formatTime(timer)}</Text>
+
+                    <TouchableOpacity
+                        style={[styles.iconButton, styles.stopwatchButton, isRunning ? styles.stopButton : styles.playButton]}
+                        onPress={toggleStopwatch}
+                    >
+                        <Ionicons name={isRunning ? "square" : "play"} size={16} color="white" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={[styles.iconButton, styles.stopwatchButton, styles.resetButton]}
+                        onPress={resetStopwatch}
+                    >
+                        <Ionicons name="close" size={18} color="white" />
+                    </TouchableOpacity>
+                </View>
             </View>
 
             <MapView
@@ -158,17 +229,18 @@ export default function MapScreen() {
             >
                 {drivers.map(driver => {
                     const isSelf = driver.uid === userProfile?.uid;
+                    const isTracked = driver.uid === trackedDriverUid;
                     return (
                         <Marker
                             key={driver.uid}
                             coordinate={{ latitude: driver.lat, longitude: driver.lng }}
                             title={driver.username}
                             description={driver.licensePlate}
-                            pinColor={isSelf ? 'blue' : 'red'}
-                            zIndex={isSelf ? 1000 : 1}
+                            pinColor={isSelf ? 'blue' : (isTracked ? 'green' : 'red')}
+                            zIndex={isSelf || isTracked ? 1000 : 1}
                         >
-                            <View style={styles.markerContainer}>
-                                <Text style={[styles.markerText, isSelf && { color: 'blue', fontWeight: 'bold' }]}>
+                            <View style={[styles.markerContainer, isTracked && { borderColor: '#4f46e5', borderWidth: 2 }]}>
+                                <Text style={[styles.markerText, (isSelf || isTracked) && { color: 'blue', fontWeight: 'bold' }]}>
                                     {driver.username}
                                 </Text>
                             </View>
@@ -209,34 +281,83 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 12,
     },
-    searchContainer: {
+    controlBar: {
         position: 'absolute',
-        top: 10,
+        top: 5, // Directly under tabs (MapScreen is inside content view)
         left: 10,
-        right: 10,
-        zIndex: 1,
+        right: 10, // Or fix width
+        zIndex: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+    },
+    searchSection: {
         flexDirection: 'row',
         backgroundColor: 'white',
         borderRadius: 8,
-        padding: 5,
+        padding: 4,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
         elevation: 5,
+        alignItems: 'center',
+    },
+    stopwatchSection: {
+        flexDirection: 'row',
+        backgroundColor: 'white',
+        borderRadius: 8,
+        padding: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
+        alignItems: 'center',
+        marginLeft: 10,
     },
     searchInput: {
-        flex: 1,
-        paddingHorizontal: 10,
-        height: 40,
+        width: 60,
+        height: 36,
+        textAlign: 'center',
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#000',
+        backgroundColor: '#f3f4f6',
+        borderRadius: 4,
+        marginRight: 4,
+    },
+    iconButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 6,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     searchButton: {
         backgroundColor: '#4f46e5',
-        width: 40,
-        height: 40,
-        borderRadius: 8,
-        justifyContent: 'center',
-        alignItems: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#ef4444',
+    },
+    stopwatchButton: {
+        marginLeft: 4,
+    },
+    playButton: {
+        backgroundColor: '#10b981', // Green
+    },
+    stopButton: {
+        backgroundColor: '#f59e0b', // Amber/Orange
+    },
+    resetButton: {
+        backgroundColor: '#6b7280', // Gray
+    },
+    timerText: {
+        fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginHorizontal: 8,
+        color: '#1f2937',
     },
 });
 
