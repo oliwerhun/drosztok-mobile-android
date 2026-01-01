@@ -350,18 +350,13 @@ export const startLocationTracking = async () => {
 export const stopLocationTracking = async () => {
     logger.log('Stopping Tracking Service...');
     try {
-        const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
-        if (isRegistered) {
-            await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-            console.log('Background location tracking stopped');
-        }
+        // Aggressively stop Location Updates (ignore if not running)
+        await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME).catch(() => { });
+        console.log('Background location tracking stopped');
 
-        // Stop Geofencing too
-        const isGeofenceRegistered = await TaskManager.isTaskRegisteredAsync(GEOFENCE_TASK_NAME);
-        if (isGeofenceRegistered) {
-            await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME);
-            console.log('Geofencing fallback stopped');
-        }
+        // Aggressively stop Geofencing (ignore if not running)
+        await Location.stopGeofencingAsync(GEOFENCE_TASK_NAME).catch(() => { });
+        console.log('Geofencing fallback stopped');
     } catch (error) {
         console.error('Error stopping location tracking:', error);
     }

@@ -177,6 +177,10 @@ export default function DashboardScreen({ navigation }: any) {
                 const locationRef = doc(db, 'driver_locations', userProfile.uid);
                 await deleteDoc(locationRef);
                 console.log('Logout: Removed driver location from map');
+
+                // Clear session ID in profile to prevent "Takeover" alert on next login
+                const profileRef = doc(db, 'profiles', userProfile.uid);
+                await updateDoc(profileRef, { sessionId: null });
               }
 
               // Remove USER_ID to stop background location updates

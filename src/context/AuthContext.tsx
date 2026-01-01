@@ -93,20 +93,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const updatedLocalSessionId = await AsyncStorage.getItem('sessionId');
 
             // If local session exists but differs from remote, it means a newer login happened elsewhere
+            // EXPERT FIX: Timestamp Comparison
+            // sessionId is Date.now().toString(), so newer session has larger number.
+            // If local > remote, WE are the newer session (waiting for cloud to catch up), so DO NOT logout.
+            // If local < remote, WE are the older session, so DO logout.
+            const localTs = updatedLocalSessionId ? Number(updatedLocalSessionId) : 0;
+            const remoteTs = remoteSessionId ? Number(remoteSessionId) : 0;
+
             if (updatedLocalSessionId && updatedLocalSessionId !== remoteSessionId) {
-              console.log("Session Mismatch! Logging out.");
+              // If local is NEWER, ignore mismatch (we are the authority)
+              if (localTs > remoteTs) {
+                console.log(`✅ [SESSION] Local session (${localTs}) is newer than remote (${remoteTs}). Ignoring mismatch.`);
+              } else {
+                // Local is OLDER (or invalid), so we must die.
+                console.log(`Session Mismatch! Local (${localTs}) < Remote (${remoteTs}). Logging out.`);
 
-              // Checkout from all locations before logging out
-              await checkoutFromAllLocations(user.uid, data as UserProfile);
+                // ... proceed to checkout block (keep existing code below)
+                try {
+                  await checkoutFromAllLocations(user.uid, data as UserProfile);
+                } catch (e) {
+                  console.error('Error during session mismatch checkout:', e);
+                }
 
-              // Delete driver location to remove from map
-              const locationRef = doc(db, 'driver_locations', user.uid);
-              await deleteDoc(locationRef);
-              console.log('Session Mismatch: Removed driver location from map');
+                // Delete driver location to remove from map
+                const locationRef = doc(db, 'driver_locations', user.uid);
+                await deleteDoc(locationRef).catch(console.error);
+                console.log('Session Mismatch: Removed driver location from map');
 
-              Alert.alert("Biztonsági Figyelmeztetés", "Bejelentkeztél egy másik eszközön. Ezen az eszközön kiléptettünk a sorból.");
-              await signOut(auth);
-              await AsyncStorage.removeItem('sessionId');
+                Alert.alert("Biztonsági Figyelmeztetés", "Átjelentkeztél egy másik készülékre.\nBiztonsági okokból kijelentkeztettünk az alkalmazásból.");
+                await signOut(auth);
+                await AsyncStorage.removeItem('sessionId');
+              }
             } else {
               console.log('✅ [SESSION] Session ID matches, continuing');
             }

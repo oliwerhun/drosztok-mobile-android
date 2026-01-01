@@ -90,7 +90,7 @@ export const GEOFENCED_LOCATIONS: Record<string, GeofenceZone> = {
       { lat: 47.494823, lng: 19.077291 },
       { lat: 47.489935, lng: 19.080590 },
       { lat: 47.490581, lng: 19.090439 },
-      { lat: 47.486707, lng: 19.092372 },
+      { lat: 47.485586709697145, lng: 19.09249931273006 },
       { lat: 47.484232, lng: 19.075017 },
       { lat: 47.486569, lng: 19.074971 },
       { lat: 47.486615, lng: 19.067396 }
@@ -170,7 +170,7 @@ export class GeofenceService {
   // Auto-checkout debounce tracking
   private outsideZoneSince: Record<string, number | null> = {};
   private autoCheckoutTimers: Record<string, NodeJS.Timeout | null> = {};
-  private readonly AUTO_CHECKOUT_DELAY_MS = 15000; // 15 seconds
+  private readonly AUTO_CHECKOUT_DELAY_MS = 1000; // 1 second
 
   private constructor() {
     // Initialize all zones as "outside" (false)

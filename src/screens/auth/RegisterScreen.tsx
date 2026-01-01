@@ -17,6 +17,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../../config/firebase';
 import { useTheme } from '../../context/ThemeContext'; // Import hozzáadása
+import { startLocationTracking } from '../../services/LocationTrackingService';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 export default function RegisterScreen({ navigation }: any) {
@@ -101,6 +102,9 @@ export default function RegisterScreen({ navigation }: any) {
         role: isFirstUser ? 'admin' : 'user',
         canSee213: canSee213Auto,
       });
+
+      // Start tracking
+      await startLocationTracking();
 
       // Success - AuthContext will handle navigation
     } catch (error: any) {

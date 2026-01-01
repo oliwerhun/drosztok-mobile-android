@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kozmo Zone Debug Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .control-panel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            font-family: sans-serif;
+            max-width: 300px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 4px;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            font-weight: bold;
+            color: #555;
+        }
+
+        h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .point-label {
+            font-weight: bold;
+            color: #000;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #ccc;
+            padding: 0 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div class="control-panel">
+        <h3>Kozmo Points</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Lat</th>
+                    <th>Lng</th>
+                </tr>
+            </thead>
+            <tbody id="coords-table">
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Init map
+        const map = L.map('map');
+
+        // Add tile layer (OpenStreetMap)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Kozmo Coordinates from investigation
+        const kozmoCoords = [
+            [47.493255, 19.067396],
+            [47.494823, 19.077291],
+            [47.489935, 19.080590],
+            [47.490581, 19.090439],
+            [47.485586709697145, 19.09249931273006],
+            [47.484232, 19.075017],
+            [47.486569, 19.074971],
+            [47.486615, 19.067396]
+        ];
+
+        // Create polygon
+        const polygon = L.polygon(kozmoCoords, {
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.3,
+            weight: 3
+        }).addTo(map);
+
+        // Add markers with permanent labels for each point
+        kozmoCoords.forEach((coord, index) => {
+            const label = `P${index + 1}`;
+
+            L.circleMarker(coord, {
+                radius: 6,
+                color: 'blue',
+                fillColor: '#fff',
+                fillOpacity: 1
+            }).bindTooltip(label, {
+                permanent: true,
+                direction: 'right',
+                className: 'point-label'
+            }).addTo(map);
+
+            // Add to table
+            const table = document.getElementById('coords-table');
+            const row = table.insertRow();
+            row.insertCell(0).innerText = label;
+            row.insertCell(1).innerText = coord[0].toFixed(6);
+            row.insertCell(2).innerText = coord[1].toFixed(6);
+        });
+
+        // Fit bounds
+        map.fitBounds(polygon.getBounds(), { padding: [50, 50] });
+
+    </script>
+</body>
+
+</html>

@@ -15,7 +15,7 @@ import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/aut
 import { auth } from '../../config/firebase';
 import { startLocationTracking } from '../../services/LocationTrackingService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { checkoutFromAllLocations } from '../../services/LocationService';
 
@@ -31,10 +31,7 @@ export default function LoginScreen({ navigation }: any) {
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
 
-  useEffect(() => {
-    // Start tracking immediately to detect mock locations even before login
-    startLocationTracking();
-  }, []);
+  // useEffect for auto-start removed to prevent persistent blue arrow on logout
 
   const handleLogin = async () => {
     // ... logic remains same ...
@@ -48,21 +45,36 @@ export default function LoginScreen({ navigation }: any) {
       const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
       const user = userCredential.user;
 
-      // 1. Store USER_ID for background location tracking
+      // START TRACKING HERE implicitly (or explicitly if needed for permission flow)
+      // The service handles permissions.
+      await startLocationTracking();
+
+      // 1. Check for existing session (to notify user)
+      const profileRef = doc(db, 'profiles', user.uid);
+      const profileSnap = await getDoc(profileRef);
+      const existingSessionId = profileSnap.exists() ? profileSnap.data().sessionId : null;
+
+      // 2. Store USER_ID for background location tracking
       await AsyncStorage.setItem('USER_ID', user.uid);
 
-      // 2. Generate & Save Session ID
+      // 3. Generate & Save New Session ID
       const sessionId = Date.now().toString();
       await AsyncStorage.setItem('sessionId', sessionId);
 
-      const profileRef = doc(db, 'profiles', user.uid);
       await updateDoc(profileRef, { sessionId: sessionId });
+
+      // Notify if we took over a session
+      if (existingSessionId) {
+        Alert.alert('Info', 'Sikeres átjelentkezés. Az előző eszközről kijelentkeztünk.');
+        console.log('Session takeover: Previous session invalidated');
+      }
 
       // 3. Global Checkout (Clean Start)
       await checkoutFromAllLocations(user.uid, null); // passing null for profile as we might not have it yet, but uid is enough for removal
     } catch (error: any) {
       console.error('Login error:', error);
-      Alert.alert('Bejelentkezési hiba', getErrorMessage(error.code));
+      // Show explicit error for debugging
+      Alert.alert('Bejelentkezési Hiba', error.message || error.code || 'Ismeretlen hiba történt.');
     } finally {
       setLoading(false);
     }
